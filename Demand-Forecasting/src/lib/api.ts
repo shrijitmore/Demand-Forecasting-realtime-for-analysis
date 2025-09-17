@@ -1,0 +1,525 @@
+const API_BASE_URL = "http://localhost:3000";
+
+// Types for API responses
+export interface ForecastData {
+  PRODUCT_CARD_ID: string;
+  PRODUCT_NAME: string;
+  Date: string;
+  Forecasted_Demand: number;
+}
+
+export interface SalesKPIs {
+  total_orders: number;
+  total_sales: number;
+  avg_discount: number;
+  late_deliveries: number;
+}
+
+export interface InventoryKPIs {
+  total_skus: number;
+  total_stock_on_hand: number;
+  in_transit: number;
+  below_reorder_point: number;
+  avg_lead_time: number;
+  scheduled_qty: number;
+}
+
+export interface ProductionKPIs {
+  total_operators: number;
+  absent_today: number;
+  total_units_scheduled: number;
+  unique_products: number;
+}
+
+export interface SupplierData {
+  supplier: string;
+  lead_time_days: number;
+  fulfillment_rate_percent: number;
+  otd_percent: number;
+  late_deliveries: number;
+  total_orders: number;
+}
+
+// API utility functions
+export const api = {
+  // ─── FORECAST APIs ────────────────────────────────────────
+  
+  // Get all forecast data with optional filtering
+  getForecasts: async (productCardId?: string, productName?: string) => {
+    const params = new URLSearchParams();
+    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
+    if (productName) params.append('PRODUCT_NAME', productName);
+    
+    const response = await fetch(`${API_BASE_URL}/api/forecasts?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get aggregated forecast data
+  getForecastsWeekly: async (productCardId?: string, productName?: string) => {
+    const params = new URLSearchParams();
+    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
+    if (productName) params.append('PRODUCT_NAME', productName);
+    
+    const response = await fetch(`${API_BASE_URL}/api/forecasts/weekly?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getForecastsMonthly: async (productCardId?: string, productName?: string) => {
+    const params = new URLSearchParams();
+    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
+    if (productName) params.append('PRODUCT_NAME', productName);
+    
+    const response = await fetch(`${API_BASE_URL}/api/forecasts/monthly?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getForecastsQuarterly: async (productCardId?: string, productName?: string) => {
+    const params = new URLSearchParams();
+    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
+    if (productName) params.append('PRODUCT_NAME', productName);
+    
+    const response = await fetch(`${API_BASE_URL}/api/forecasts/quarterly?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get unique products for dropdowns
+  getProducts: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/products`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get AI insights
+  getInsights: async (month?: string, productCardId?: string, productName?: string) => {
+    const params = new URLSearchParams();
+    if (month) params.append('Month', month);
+    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
+    if (productName) params.append('PRODUCT_NAME', productName);
+    
+    const response = await fetch(`${API_BASE_URL}/api/insights?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // ─── SALES APIs ───────────────────────────────────────────
+
+  // Get sales KPIs
+  getSalesKPIs: async (): Promise<SalesKPIs> => {
+    const response = await fetch(`${API_BASE_URL}/api/sales/kpis`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get sales metrics by type
+  getSalesMetrics: async (metric: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/sales/${metric}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // ─── INVENTORY APIs ───────────────────────────────────────
+
+  // Get inventory KPIs
+  getInventoryKPIs: async (): Promise<InventoryKPIs> => {
+    const response = await fetch(`${API_BASE_URL}/api/inventory/kpis`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get inventory data by dataset
+  getInventoryData: async (dataset: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/inventory/${dataset}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get reorder chart data
+  getReorderChart: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/inventory/reorder_chart`);
+      if (!response.ok) {
+        console.warn('Reorder chart endpoint not available, using alerts data');
+        const alertsResponse = await fetch(`${API_BASE_URL}/api/inventory/alerts`);
+        const alertsData = await alertsResponse.json();
+        return alertsData.map((item: any) => ({
+          SKU_No: item.SKU_No,
+          Available: parseInt(item.Available || 0),
+          Reorder_Point: parseInt(item.Reorder_Point || 0)
+        }));
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching reorder chart:', error);
+      return [];
+    }
+  },
+
+  // Get lead times
+  getLeadTimes: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/inventory/lead_times`);
+      if (!response.ok) {
+        console.warn('Lead times endpoint not available, using stock levels data');
+        const stockResponse = await fetch(`${API_BASE_URL}/api/inventory/stock_levels`);
+        const stockData = await stockResponse.json();
+        return stockData.map((item: any) => ({
+          SKU_No: item.SKU_No,
+          Lead_Time_Days: parseFloat(item.Lead_Time_Days || 0)
+        }));
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching lead times:', error);
+      return [];
+    }
+  },
+
+  // Get supplier alerts
+  getSupplierAlerts: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/inventory/suppliers`);
+      if (!response.ok) {
+        console.warn('Supplier alerts endpoint not available, using alerts data');
+        const alertsResponse = await fetch(`${API_BASE_URL}/api/inventory/alerts`);
+        const alertsData = await alertsResponse.json();
+        const filtered = alertsData.filter((item: any) => 
+          parseInt(item.Available || 0) < parseInt(item.Reorder_Point || 0)
+        );
+        const supplierCounts: any = {};
+        filtered.forEach((item: any) => {
+          const supplier = item.Supplier;
+          supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
+        });
+        return Object.entries(supplierCounts).map(([supplier, count]) => ({
+          Supplier: supplier,
+          Alert_Count: count
+        }));
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching supplier alerts:', error);
+      return [];
+    }
+  },
+
+  // ─── PROCUREMENT APIs ─────────────────────────────────────
+
+  // Get all procurement insights
+  getProcurementInsights: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/procurement/insights`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get procurement insight by SKU
+  getProcurementInsightBySKU: async (skuId: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/procurement/insight/${skuId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // ─── SCHEDULING & OPERATOR APIs ───────────────────────────
+
+  // Get production KPIs
+  getProductionKPIs: async (): Promise<ProductionKPIs> => {
+    const response = await fetch(`${API_BASE_URL}/api/kpis`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get schedule data
+  getSchedule: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/schedule`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get station chart data
+  getScheduleChart: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/schedule/chart`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get operator workload
+  getOperatorWorkload: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/schedule/operator_workload`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get attendance data
+  getAttendance: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/attendance`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get attendance table data
+  getAttendanceTable: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/attendance/table`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get leave requests
+  getLeaves: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/leaves`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get operator insights
+  getOperatorInsights: async () => {
+    // Use dedicated operator insights endpoint to avoid collision with forecasting insights
+    const response = await fetch(`${API_BASE_URL}/api/operator-insights`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get insights by operator
+  getInsightsByOperator: async (operatorId: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/insights1/${operatorId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get operator dropdown data
+  getOperatorsDropdown: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/operators/dropdown`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // ─── SUPPLIER PERFORMANCE APIs ───────────────────────────
+
+  // Get supplier data by endpoint and supplier
+  getSupplierData: async (endpoint: string, supplier: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/${endpoint}/${supplier}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get supplier KPIs
+  getSupplierKPIs: async (supplier: string): Promise<SupplierData> => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/kpis/${supplier}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get supplier metrics
+  getSupplierMetrics: async (supplier: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/metrics/${supplier}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get delivery stats
+  getSupplierDeliveryStats: async (supplier: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/delivery-stats/${supplier}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get list of suppliers
+  getSuppliersList: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/list`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Available suppliers:', data);
+    return data;
+  },
+
+  // Get all alternate suppliers
+  getAlternateSuppliers: async () => {
+    try {
+      console.log('Fetching all alternate suppliers');
+      
+      const response = await fetch(`${API_BASE_URL}/api/suppliers/alternates`);
+      if (!response.ok) {
+        console.error(`HTTP error ${response.status} fetching alternate suppliers`);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log('Raw alternate suppliers data:', data);
+      
+      // Transform the data structure to match UI expectations
+      const normalizedData = data.map(item => ({
+        Supplier_Name: item.supplier_name,
+        OTD_Percentage: item.otd_percentage,
+        Quality_Score: item.quality_score,
+        Email: item.email,
+        Location: item.location,
+        Avg_Lead_Time_Days: item.avg_lead_time_days,
+        Fulfillment_Rate: item.fulfillment_rate
+      }));
+      
+      console.log('Normalized alternate suppliers data:', normalizedData);
+      return normalizedData;
+    } catch (error) {
+      console.error('Error fetching alternate suppliers:', error);
+      return null;
+    }
+  },
+
+  // Get supplier insight by SKU
+  getSupplierInsight: async (supplier: string) => {
+    try {
+      // Convert supplier name to lowercase before encoding
+      const lowercaseSupplier = supplier.toLowerCase();
+      const encodedSupplier = encodeURIComponent(lowercaseSupplier);
+      
+      const response = await fetch(`${API_BASE_URL}/api/suppliers/insight/${encodedSupplier}`);
+      if (!response.ok) {
+        console.error(`HTTP error ${response.status} fetching insight for ${supplier}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log('Supplier insight data:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching supplier insight:', error);
+      return null;
+    }
+  },
+
+  // ─── HISTORICAL INSIGHTS APIs ─────────────────────────────
+
+  // Get insights by period
+  getHistoricalInsights: async (period: 'monthly' | 'quarterly' | 'yearly') => {
+    const response = await fetch(`${API_BASE_URL}/api/insights/${period}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // ─── HEALTH CHECK ─────────────────────────────────────────
+
+  // Health check
+  healthCheck: async () => {
+    const response = await fetch(`${API_BASE_URL}/`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+};
+
+// Error handling wrapper
+export const apiCall = async <T>(
+  apiFunction: () => Promise<T>,
+): Promise<T | null> => {
+  try {
+    return await apiFunction();
+  } catch (error) {
+    console.error("API call failed:", error);
+    return null;
+  }
+};
+
+// Debug function to test API endpoints
+export const debugAPI = async () => {
+  const endpoints = [
+    '/api/forecasts',
+    '/api/sales/kpis',
+    '/api/inventory/kpis',
+    '/api/kpis',
+    '/api/suppliers/list',
+    '/'
+  ];
+
+  console.log('Testing API endpoints...');
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      console.log(`${endpoint}: ${response.ok ? '✅ OK' : '❌ Failed'} (${response.status})`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`Error details: ${errorText}`);
+      }
+    } catch (error) {
+      console.log(`${endpoint}: ❌ Error - ${error}`);
+    }
+  }
+};
+
+// Test API connection on load
+export const testAPIConnection = async () => {
+  console.log('Testing API connection...');
+  try {
+    const response = await fetch(`${API_BASE_URL}/`);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ API connection successful:', data);
+      return true;
+    } else {
+      console.log('❌ API connection failed:', response.status);
+      return false;
+    }
+  } catch (error) {
+    console.log('❌ API connection error:', error);
+    return false;
+  }
+};
