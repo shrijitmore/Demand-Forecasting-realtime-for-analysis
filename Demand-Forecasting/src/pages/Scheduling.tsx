@@ -223,15 +223,20 @@ const Scheduling = () => {
 
   useEffect(() => {
     fetchSchedulingData();
-    // Fetch Gantt tasks
-    fetch('http://localhost:3000/api/schedule/gantt')
-      .then(res => res.json())
+    // Initial static Gantt data fetch (for legacy CSV data if available)
+    fetch('http://localhost:5000/api/schedule/gantt')
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Gantt API not available');
+      })
       .then(data => {
-        console.log('Gantt tasks received:', data);
+        console.log('Static Gantt tasks received:', data);
         setGanttTasks(data);
       })
       .catch((error) => {
-        console.error('Error fetching gantt tasks:', error);
+        console.log('Static Gantt API not available (expected with Python backend):', error);
         setGanttTasks([]);
       });
   }, []);
