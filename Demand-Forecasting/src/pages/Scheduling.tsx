@@ -281,10 +281,10 @@ const Scheduling = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-none shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Operators</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-blue-100">Total Operators</CardTitle>
+            <Users className="h-4 w-4 text-blue-200" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -292,10 +292,10 @@ const Scheduling = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white border-none shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Absent Today</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-red-100">Absent Today</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-200" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -303,10 +303,10 @@ const Scheduling = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-none shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Units Scheduled</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-green-100">Units Scheduled</CardTitle>
+            <Package className="h-4 w-4 text-green-200" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -314,10 +314,10 @@ const Scheduling = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-none shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unique Products</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-purple-100">Unique Products</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-200" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
