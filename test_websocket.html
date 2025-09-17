@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - Real-time Scheduling</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .disconnected { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .data-item { background: #f8f9fa; border: 1px solid #dee2e6; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .gantt-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .gantt-table th, .gantt-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .gantt-table th { background-color: #f2f2f2; }
+        .realtime-data { background: linear-gradient(90deg, #d4edda, #c3e6cb); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Real-time Scheduling WebSocket Test</h1>
+        
+        <div id="status" class="status disconnected">
+            Status: Disconnected
+        </div>
+        
+        <div>
+            <button onclick="connectWebSocket()">Connect</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+            <button onclick="clearData()">Clear Data</button>
+        </div>
+        
+        <h2>📊 Live Production Data</h2>
+        <div id="dataContainer"></div>
+        
+        <h2>📅 Real-time Gantt Schedule</h2>
+        <table class="gantt-table" id="ganttTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Blue Pump Demand</th>
+                    <th>Green Pump Demand</th>
+                    <th>Orange Pump Demand</th>
+                    <th>Total Scheduled</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="ganttBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let ws = null;
+        let dataCount = 0;
+        
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+            
+            const wsUrl = 'ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-05&interval=3';
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                updateStatus('Connected', true);
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    displayData(data);
+                    updateGanttChart(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                updateStatus('Disconnected', false);
+                console.log('WebSocket closed');
+            };
+            
+            ws.onerror = function(error) {
+                updateStatus('Connection Error', false);
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function updateStatus(message, isConnected) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = 'Status: ' + message;
+            statusEl.className = 'status ' + (isConnected ? 'connected' : 'disconnected');
+        }
+        
+        function displayData(data) {
+            const container = document.getElementById('dataContainer');
+            dataCount++;
+            
+            const dataItem = document.createElement('div');
+            dataItem.className = 'data-item realtime-data';
+            dataItem.innerHTML = `
+                <h3>📦 Update #${dataCount} - ${data.date}</h3>
+                <p><strong>Forecasted Demand:</strong></p>
+                <ul>
+                    <li>🔵 Blue Pump: ${data.forecasted_demand.blue_pump}</li>
+                    <li>🟢 Green Pump: ${data.forecasted_demand.green_pump}</li>
+                    <li>🟠 Orange Pump: ${data.forecasted_demand.orange_pump}</li>
+                </ul>
+                <p><strong>Total Scheduled:</strong> ${data.total_qty_scheduled}</p>
+                <p><strong>Production Orders:</strong> ${data.production_orders.length}</p>
+                <p><strong>Production Schedule:</strong> ${data.production_schedule.length}</p>
+                <small>Received at: ${new Date(data.ts).toLocaleString()}</small>
+            `;
+            
+            // Add to top of container
+            container.insertBefore(dataItem, container.firstChild);
+            
+            // Keep only last 10 items
+            while (container.children.length > 10) {
+                container.removeChild(container.lastChild);
+            }
+        }
+        
+        function updateGanttChart(data) {
+            const tbody = document.getElementById('ganttBody');
+            
+            const row = document.createElement('tr');
+            row.className = 'realtime-data';
+            row.innerHTML = `
+                <td>${data.date}</td>
+                <td>🔵 ${data.forecasted_demand.blue_pump}</td>
+                <td>🟢 ${data.forecasted_demand.green_pump}</td>
+                <td>🟠 ${data.forecasted_demand.orange_pump}</td>
+                <td>${data.total_qty_scheduled}</td>
+                <td>${new Date(data.ts).toLocaleTimeString()}</td>
+            `;
+            
+            // Add to top of table
+            tbody.insertBefore(row, tbody.firstChild);
+            
+            // Keep only last 20 rows
+            while (tbody.children.length > 20) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+        
+        function clearData() {
+            document.getElementById('dataContainer').innerHTML = '';
+            document.getElementById('ganttBody').innerHTML = '';
+            dataCount = 0;
+        }
+        
+        // Auto-connect on page load
+        window.onload = function() {
+            connectWebSocket();
+        };
+        
+        // Cleanup on page unload
+        window.onbeforeunload = function() {
+            if (ws) {
+                ws.close();
+            }
+        };
+    </script>
+</body>
+</html>
