@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timedelta
 from urllib.parse import parse_qs
 import pandas as pd
-import pyodbc
+import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sock import Sock
@@ -17,61 +17,40 @@ CORS(app)
 sock = Sock(app)
 
 # ──────────────────────────────────────────────
-# SQL SERVER CONFIG
+# Data Loading Functions (Using CSV Files)
 # ──────────────────────────────────────────────
-SERVER = r"192.168.10.241,1433"
-DATABASE = "SCM_DB"
-USERNAME = "remote_user"
-PASSWORD = "1234"
-DRIVER = "{ODBC Driver 17 for SQL Server}"  # Check in ODBC Data Sources
 
-def get_db_connection():
-    conn = pyodbc.connect(
-        f"DRIVER={DRIVER};"
-        f"SERVER={SERVER};"
-        f"DATABASE={DATABASE};"
-        f"UID={USERNAME};"
-        f"PWD={PASSWORD};"
-        "TrustServerCertificate=yes;"
-    )
-    return conn
+def load_csv_data(filename):
+    """Load CSV data from the Data directory."""
+    try:
+        filepath = os.path.join(os.path.dirname(__file__), 'Data', filename)
+        if os.path.exists(filepath):
+            df = pd.read_csv(filepath)
+            return df
+        else:
+            print(f"Warning: File {filename} not found")
+            return pd.DataFrame()
+    except Exception as e:
+        print(f"Error loading {filename}: {e}")
+        return pd.DataFrame()
 
-# ──────────────────────────────────────────────
-# Load Sales Data from SQL
-# ──────────────────────────────────────────────
+# Load sales data from CSV
 def load_sales_data():
-    try:
-        with get_db_connection() as conn:
-            query = "SELECT * FROM Pump_Data_Sep"   # 👈 replace with your actual table
-            df = pd.read_sql(query, conn)
-        return df
-    except Exception as e:
-        print("DB Error in load_sales_data:", e)
-        return None
+    return load_csv_data('Pump_Data.csv')
 
+# Mock database connection for compatibility
+def get_db_connection():
+    return None
 
-# ──────────────────────────────────────────────
-# HELPER FUNCTION to run SQL queries
-# ──────────────────────────────────────────────
 def run_query(query):
-    try:
-        conn = get_db_connection()
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
-    except Exception as e:
-        print("❌ SQL Error:", e)
-        return None
-    
+    """Mock function to simulate SQL queries using CSV data."""
+    # This is a simplified mock - in real scenario you'd parse the query
+    # For now, return empty DataFrame
+    return pd.DataFrame()
 
 def load_sql(query):
-    """Run a SQL query and return a pandas DataFrame."""
-    try:
-        with get_db_connection() as conn:
-            return pd.read_sql(query, conn)
-    except Exception as e:
-        print("❌ SQL Error in load_sql:", e)
-        return pd.DataFrame()
+    """Mock function for SQL queries."""
+    return pd.DataFrame()
 
     
 # ──────────────────────────────────────────────
