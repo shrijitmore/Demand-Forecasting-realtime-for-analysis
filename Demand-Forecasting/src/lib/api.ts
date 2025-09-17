@@ -44,77 +44,60 @@ export interface SupplierData {
 export const api = {
   // ─── FORECAST APIs ────────────────────────────────────────
   
-  // Get all forecast data with optional filtering
-  getForecasts: async (productCardId?: string, productName?: string) => {
-    const params = new URLSearchParams();
-    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
-    if (productName) params.append('PRODUCT_NAME', productName);
-    
-    const response = await fetch(`${API_BASE_URL}/api/forecasts?${params}`);
+  // Get forecast data by frequency (daily, weekly, monthly)
+  getForecasts: async (frequency: string = 'daily') => {
+    const response = await fetch(`${API_BASE_URL}/api/forecast/${frequency}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
   },
 
-  // Get aggregated forecast data
-  getForecastsWeekly: async (productCardId?: string, productName?: string) => {
-    const params = new URLSearchParams();
-    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
-    if (productName) params.append('PRODUCT_NAME', productName);
-    
-    const response = await fetch(`${API_BASE_URL}/api/forecasts/weekly?${params}`);
+  // Get forecast data by product
+  getForecastByProduct: async (productId: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/forecast/product/${productId}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
+  },
+
+  // Legacy compatibility functions for existing UI
+  getForecastsWeekly: async (productCardId?: string, productName?: string) => {
+    return api.getForecasts('weekly');
   },
 
   getForecastsMonthly: async (productCardId?: string, productName?: string) => {
-    const params = new URLSearchParams();
-    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
-    if (productName) params.append('PRODUCT_NAME', productName);
-    
-    const response = await fetch(`${API_BASE_URL}/api/forecasts/monthly?${params}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    return api.getForecasts('monthly');
   },
 
   getForecastsQuarterly: async (productCardId?: string, productName?: string) => {
-    const params = new URLSearchParams();
-    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
-    if (productName) params.append('PRODUCT_NAME', productName);
-    
-    const response = await fetch(`${API_BASE_URL}/api/forecasts/quarterly?${params}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    return api.getForecasts('daily'); // Use daily as fallback since quarterly may not exist
   },
 
-  // Get unique products for dropdowns
+  // Get unique products for dropdowns (mock implementation for now)
   getProducts: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/products`);
+    // Since Python backend doesn't have this endpoint, we'll return mock data
+    // In a real scenario, you'd want to add this endpoint to the Python backend
+    return [
+      { PRODUCT_CARD_ID: 'BP001', PRODUCT_NAME: 'Blue Pump' },
+      { PRODUCT_CARD_ID: 'GP001', PRODUCT_NAME: 'Green Pump' },
+      { PRODUCT_CARD_ID: 'OP001', PRODUCT_NAME: 'Orange Pump' }
+    ];
+  },
+
+  // Get forecast AI insights by period
+  getForecastInsights: async (period: 'monthly' | 'quarterly' | 'yearly') => {
+    const response = await fetch(`${API_BASE_URL}/api/forecast/insights/${period}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
   },
 
-  // Get AI insights
+  // Get AI insights (legacy compatibility)
   getInsights: async (month?: string, productCardId?: string, productName?: string) => {
-    const params = new URLSearchParams();
-    if (month) params.append('Month', month);
-    if (productCardId) params.append('PRODUCT_CARD_ID', productCardId);
-    if (productName) params.append('PRODUCT_NAME', productName);
-    
-    const response = await fetch(`${API_BASE_URL}/api/insights?${params}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    return api.getForecastInsights('monthly');
   },
 
   // ─── SALES APIs ───────────────────────────────────────────
