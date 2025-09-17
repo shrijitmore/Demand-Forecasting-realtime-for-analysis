@@ -160,35 +160,32 @@ def kpis():
         print("Error in KPIs:", e)
         return jsonify({"error": str(e)})
 
-# ──────────────────────────────────────────────
-# Metrics API
-# ──────────────────────────────────────────────
 @app.route("/api/sales/<string:metric>", methods=["GET"])
 def sales_metric(metric):
     df = load_sales_data()
-    if df is None:
+    if df is None or df.empty:
         return jsonify({"error": "Data not loaded"})
 
     try:
         if metric == "city-sales":
-            data = df.groupby("Customer_City")["Sales"].sum().nlargest(10)
+            data = df.groupby("Customer City")["Sales"].sum().nlargest(10)
             return jsonify({"cities": data.index.tolist(), "sales": data.values.tolist()})
         elif metric == "category-distribution":
-            data = df.groupby("Category_Name")["Sales"].sum()
+            data = df.groupby("Category Name")["Sales"].sum()
             return jsonify({"categories": data.index.tolist(), "sales": data.values.tolist()})
         elif metric == "monthly-sales":
-            df["order_date_(DateOrders)"] = pd.to_datetime(df["order_date_(DateOrders)"], errors="coerce")
-            df["Month"] = df["order_date_(DateOrders)"].dt.to_period("M").astype(str)
+            df["order date (DateOrders)"] = pd.to_datetime(df["order date (DateOrders)"], errors="coerce")
+            df["Month"] = df["order date (DateOrders)"].dt.to_period("M").astype(str)
             data = df.groupby("Month")["Sales"].sum().sort_index()
             return jsonify({"months": data.index.tolist(), "sales": data.values.tolist()})
         elif metric == "shipping-mode":
-            data = df["Shipping_Mode"].value_counts()
+            data = df["Shipping Mode"].value_counts()
             return jsonify({"modes": data.index.tolist(), "counts": data.values.tolist()})
         elif metric == "region-sales":
-            data = df.groupby("Order_Region")["Sales"].sum().sort_values(ascending=False)
+            data = df.groupby("Order Region")["Sales"].sum().sort_values(ascending=False)
             return jsonify({"regions": data.index.tolist(), "sales": data.values.tolist()})
         elif metric == "top-products":
-            data = df.groupby("Product_Name")["Sales"].sum().nlargest(5)
+            data = df.groupby("Product Name")["Sales"].sum().nlargest(5)
             return jsonify({"products": data.index.tolist(), "sales": data.values.tolist()})
         else:
             return jsonify({"error": f"Invalid metric '{metric}'"}), 400
