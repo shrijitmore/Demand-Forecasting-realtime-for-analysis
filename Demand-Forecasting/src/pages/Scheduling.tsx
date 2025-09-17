@@ -33,6 +33,82 @@ const Scheduling = () => {
   const [operatorInsights, setOperatorInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [ganttTasks, setGanttTasks] = useState<any[]>([]);
+  const [realtimeScheduleData, setRealtimeScheduleData] = useState<WebSocketScheduleData[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
+
+  // WebSocket connection for real-time scheduling data
+  const wsUrl = `ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=10`;
+  
+  const { readyState, lastMessage } = useWebSocket({
+    url: wsUrl,
+    onMessage: (data: WebSocketScheduleData) => {
+      console.log('WebSocket message received:', data);
+      if (data && data.date) {
+        setRealtimeScheduleData(prev => {
+          // Keep only last 50 entries to prevent memory issues
+          const updated = [...prev, data].slice(-50);
+          return updated;
+        });
+        
+        // Update Gantt tasks with real-time data
+        if (data.production_schedule && data.production_schedule.length > 0) {
+          const newTasks = data.production_schedule.map((item, idx) => ({
+            id: `realtime_${data.date}_${idx}`,
+            name: `${item.Product_Name || 'Unknown Product'} - ${data.date}`,
+            start: data.ts,
+            end: new Date(new Date(data.ts).getTime() + 15 * 60000).toISOString(), // 15 minutes duration
+            progress: 0,
+            raw: {
+              ...item,
+              Date: data.date,
+              Time: new Date(data.ts).toLocaleTimeString(),
+              Scheduled_Date: data.date,
+              Station: item.Station_Name || 'Unknown Station',
+              Operator: item.Operator_Name || 'Unknown Operator',
+              Product_Name: item.Product_Name || 'Unknown Product',
+              Unit: data.total_qty_scheduled
+            }
+          }));
+          
+          setGanttTasks(prev => [...prev, ...newTasks].slice(-100)); // Keep last 100 tasks
+        }
+      }
+    },
+    onOpen: () => {
+      setConnectionStatus('Connected');
+      console.log('WebSocket connected for scheduling data');
+    },
+    onClose: () => {
+      setConnectionStatus('Disconnected');
+      console.log('WebSocket disconnected');
+    },
+    onError: (error) => {
+      setConnectionStatus('Connection Error');
+      console.error('WebSocket connection error:', error);
+    },
+    autoReconnect: true,
+    reconnectInterval: 5000
+  });
+
+  // Update connection status based on WebSocket ready state
+  useEffect(() => {
+    switch (readyState) {
+      case WebSocketReadyState.CONNECTING:
+        setConnectionStatus('Connecting...');
+        break;
+      case WebSocketReadyState.OPEN:
+        setConnectionStatus('Connected');
+        break;
+      case WebSocketReadyState.CLOSING:
+        setConnectionStatus('Disconnecting...');
+        break;
+      case WebSocketReadyState.CLOSED:
+        setConnectionStatus('Disconnected');
+        break;
+      default:
+        setConnectionStatus('Unknown');
+    }
+  }, [readyState]);
   
   // Build day-wise Gantt chart data from CSV tasks
   const dayWiseGanttData = useMemo(() => {
