@@ -196,31 +196,47 @@ def sales_metric(metric):
 # ─── Forecast APIs ────────────────────────────────────────
 @app.route("/api/forecast/<string:frequency>")
 def forecast_by_frequency(frequency):
-    query = f"""
-        SELECT Date, Forecasted_Demand, PRODUCT_CARD_ID, PRODUCT_NAME, FREQUENCY
-        FROM all_pump_forecasts_updated
-        WHERE FREQUENCY = '{frequency}'
-        ORDER BY Date
-    """
-    df = run_query(query)
+    """Get forecast data by frequency (mock implementation using CSV data)."""
+    df = load_csv_data('all_pump_forecasts.csv')
     if df is None or df.empty:
         return jsonify({"error": f"No forecast data found for {frequency}"}), 404
 
-    return jsonify(df.to_dict(orient="records"))
+    # Convert date column
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    
+    # Simple grouping by frequency (mock implementation)
+    if frequency == "weekly":
+        df["Period"] = df["Date"].dt.to_period("W").astype(str)
+    elif frequency == "monthly":  
+        df["Period"] = df["Date"].dt.to_period("M").astype(str)
+    elif frequency == "daily":
+        df["Period"] = df["Date"].dt.to_period("D").astype(str)
+    else:
+        df["Period"] = df["Date"].dt.to_period("D").astype(str)
+    
+    # Aggregate data
+    result = df.groupby(["Period", "PRODUCT_CARD_ID", "PRODUCT_NAME"]).agg({
+        "Forecasted_Demand": ["sum", "mean"]
+    }).round(2)
+    
+    result.columns = ["total_demand", "average_demand"]
+    result = result.reset_index()
+    
+    return jsonify(result.to_dict(orient="records"))
 
 @app.route("/api/forecast/product/<string:product_id>")
 def forecast_by_product(product_id):
-    query = f"""
-        SELECT Date, Forecasted_Demand, PRODUCT_CARD_ID, PRODUCT_NAME, FREQUENCY
-        FROM all_pump_forecasts_updated
-        WHERE PRODUCT_CARD_ID = '{product_id}'
-        ORDER BY Date
-    """
-    df = run_query(query)
+    """Get forecast data by product ID."""
+    df = load_csv_data('all_pump_forecasts.csv')
     if df is None or df.empty:
         return jsonify({"error": f"No forecast found for product {product_id}"}), 404
 
-    return jsonify(df.to_dict(orient="records"))
+    # Filter by product ID
+    product_data = df[df["PRODUCT_CARD_ID"] == product_id]
+    if product_data.empty:
+        return jsonify({"error": f"No forecast found for product {product_id}"}), 404
+
+    return jsonify(product_data.to_dict(orient="records"))
 
 # ─── Forecast AI Insights APIs ────────────────────────────────────────
 @app.route("/api/forecast/insights/<period>")
