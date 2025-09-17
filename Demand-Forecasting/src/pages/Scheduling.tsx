@@ -1,10 +1,26 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Users, Calendar, Package, Clock, AlertTriangle } from "lucide-react";
+import { Download, RefreshCw, Users, Calendar, Package, Clock, AlertTriangle, Wifi, WifiOff } from "lucide-react";
 import { api, apiCall, ProductionKPIs } from "@/lib/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { MarkdownRenderer } from "@/utils/markdownToHtml.tsx";
+import { useWebSocket, WebSocketReadyState } from "@/hooks/useWebSocket";
+
+interface WebSocketScheduleData {
+  date: string;
+  forecasted_demand: {
+    blue_pump: number;
+    green_pump: number;
+    orange_pump: number;
+  };
+  production_orders: any[];
+  production_schedule: any[];
+  total_qty_scheduled: number;
+  station_schedule_shift_a: any[];
+  station_schedule_shift_b: any[];
+  ts: string;
+}
 
 
 const Scheduling = () => {
