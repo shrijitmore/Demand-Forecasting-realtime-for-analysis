@@ -460,17 +460,23 @@ const Scheduling = () => {
       {/* Data Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Schedule Gantt Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Production Schedule</CardTitle>
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+            <CardTitle className="flex items-center justify-between">
+              <span>Real-time Production Schedule</span>
+              {realtimeScheduleData.length > 0 && (
+                <span className="text-sm bg-white/20 px-2 py-1 rounded-full">
+                  Live: {realtimeScheduleData.length} updates
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            
+          <CardContent className="p-4">
             <div className="overflow-x-auto">
               {dayWiseGanttData.timeSlots.length > 0 ? (
                 <table className="w-full text-sm border">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b bg-gray-50">
                       <th className="p-2 text-left">Station</th>
                       {dayWiseGanttData.timeSlots.map((time, idx) => (
                         <th key={idx} className="p-2 text-center">{time}</th>
@@ -484,10 +490,17 @@ const Scheduling = () => {
                         {station.timeActivity.map((activity, timeIdx) => (
                           <td key={timeIdx} className="p-1">
                             {activity.active ? (
-                              <div className="bg-blue-200 p-1 rounded text-xs">
+                              <div className={`p-1 rounded text-xs ${
+                                activity.isRealtime 
+                                  ? 'bg-gradient-to-r from-green-200 to-green-300 border-2 border-green-400 animate-pulse' 
+                                  : 'bg-blue-200 border border-blue-300'
+                              }`}>
                                 <div className="font-medium">{activity.operator}</div>
                                 <div className="text-gray-600">{activity.product}</div>
                                 <div className="text-gray-500">Unit: {activity.unit}</div>
+                                {activity.isRealtime && (
+                                  <div className="text-green-700 text-xs font-bold">LIVE</div>
+                                )}
                               </div>
                             ) : (
                               <div className="h-8"></div>
@@ -499,16 +512,42 @@ const Scheduling = () => {
                   </tbody>
                 </table>
               ) : (
-                <div className="text-muted-foreground">No schedule data available</div>
+                <div className="text-muted-foreground text-center py-8">
+                  {connectionStatus === 'Connected' ? 'Waiting for real-time data...' : 'No schedule data available - check WebSocket connection'}
+                </div>
               )}
             </div>
+            
+            {/* Real-time Data Summary */}
+            {realtimeScheduleData.length > 0 && (
+              <div className="mt-6 p-4 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border border-green-200">
+                <h4 className="font-semibold mb-2 text-green-800">Latest Real-time Data</h4>
+                <div className="text-sm space-y-2">
+                  {realtimeScheduleData.slice(-3).map((data, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border-l-4 border-green-400">
+                      <div>
+                        <span className="font-medium">Date: {data.date}</span>
+                        <span className="ml-4 text-gray-600">
+                          Total Scheduled: {data.total_qty_scheduled}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(data.ts).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Table for all tasks, including those not shown in Gantt */}
             <div className="mt-6">
               <h4 className="font-semibold mb-2">All Schedule Tasks</h4>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-96">
                 <table className="w-full text-sm border">
-                  <thead>
+                  <thead className="sticky top-0 bg-gray-50">
                     <tr className="border-b">
+                      <th className="p-2">Type</th>
                       <th className="p-2">Station</th>
                       <th className="p-2">Operator</th>
                       <th className="p-2">Product</th>
@@ -519,7 +558,14 @@ const Scheduling = () => {
                   </thead>
                   <tbody>
                     {ganttTasks.map((task, idx) => (
-                      <tr key={task.id || idx} className="border-b">
+                      <tr key={task.id || idx} className={`border-b ${task.id?.startsWith('realtime_') ? 'bg-green-50' : ''}`}>
+                        <td className="p-2">
+                          {task.id?.startsWith('realtime_') ? (
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">LIVE</span>
+                          ) : (
+                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">STATIC</span>
+                          )}
+                        </td>
                         <td className="p-2">{task.raw?.Station || '-'}</td>
                         <td className="p-2">{task.raw?.Operator || '-'}</td>
                         <td className="p-2">{task.raw?.Product_Name || '-'}</td>
