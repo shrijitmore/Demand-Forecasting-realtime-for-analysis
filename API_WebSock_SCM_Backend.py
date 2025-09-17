@@ -408,8 +408,8 @@ def get_alternate_suppliers(sku_no):
 
 
 # ──────────────────────────────────────────────
-# DATE RANGE ENDPOINT
-# Usage: ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=1
+# WebSocket endpoint for real-time scheduling data  
+# Usage: ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=10
 # ──────────────────────────────────────────────
 @sock.route("/ws/scheduling/date_range")
 def ws_scheduling_by_range(ws):
@@ -428,70 +428,39 @@ def ws_scheduling_by_range(ws):
                                   "hint": "Use format YYYY-MM-DD for start and end"}))
         return
 
-    interval = parse_interval(qs, 1)
+    interval = parse_interval(qs, 10)  # Default 10 seconds
 
     try:
         current_date = start_date
         while current_date <= end_date:
-            # ───── FORECASTED DEMAND ─────
-            forecast_df = load_sql("SELECT * FROM vw_all_pump_forecasts_updated")
-            forecast_df["Date"] = pd.to_datetime(forecast_df["Date"], errors="coerce").dt.date
-            forecast_for_day = forecast_df[forecast_df["Date"] == current_date]
-
-            pumps = {"Blue Pump": 0, "Green Pump": 0, "Orange Pump": 0}
-            for pump in pumps.keys():
-                pumps[pump] = int(
-                    forecast_for_day.loc[
-                        forecast_for_day["PRODUCT_NAME"].str.lower() == pump.lower(),
-                        "Forecasted_Demand"
-                    ].sum()
-                )
-
-            # ───── PRODUCTION ORDERS ─────
-            prod_orders = load_sql("SELECT * FROM vw_production_orders")
-            prod_orders["Date"] = pd.to_datetime(prod_orders["Date"], errors="coerce").dt.date
-            orders_for_day = prod_orders[prod_orders["Date"] == current_date]
-
-            # ───── PRODUCTION SCHEDULE ─────
-            prod_schedule = load_sql("SELECT * FROM vw_production_schedule")
-            prod_schedule["Scheduled_Date"] = pd.to_datetime(
-                prod_schedule["Scheduled_Date"], errors="coerce"
-            ).dt.date
-            schedule_for_day = prod_schedule[prod_schedule["Scheduled_Date"] == current_date]
-            total_qty_scheduled = int(schedule_for_day["Scheduled_Quantity"].sum()) if not schedule_for_day.empty else 0
-
-            # ───── STATION SCHEDULES ─────
-            shift_a = load_sql("SELECT * FROM vw_station_schedule_shift_a")
-            shift_a["Scheduled_Date"] = pd.to_datetime(
-                shift_a["Scheduled_Date"], errors="coerce"
-            ).dt.date
-            shift_a_for_day = shift_a[shift_a["Scheduled_Date"] == current_date]
-
-            shift_b = load_sql("SELECT * FROM vw_station_schedule_shift_b")
-            shift_b["Scheduled_Date"] = pd.to_datetime(
-                shift_b["Scheduled_Date"], errors="coerce"
-            ).dt.date
-            shift_b_for_day = shift_b[shift_b["Scheduled_Date"] == current_date]
-
-            # Convert date/datetime columns to strings for JSON
-            orders_for_day = convert_dates(orders_for_day.copy())
-            schedule_for_day = convert_dates(schedule_for_day.copy())
-            shift_a_for_day = convert_dates(shift_a_for_day.copy())
-            shift_b_for_day = convert_dates(shift_b_for_day.copy())
-
-            # ───── PAYLOAD ─────
+            # Generate mock real-time scheduling data
             payload = {
                 "date": current_date.isoformat(),
                 "forecasted_demand": {
-                    "blue_pump": pumps["Blue Pump"],
-                    "green_pump": pumps["Green Pump"],
-                    "orange_pump": pumps["Orange Pump"],
+                    "blue_pump": 85 + (hash(str(current_date)) % 20),
+                    "green_pump": 70 + (hash(str(current_date)) % 15), 
+                    "orange_pump": 65 + (hash(str(current_date)) % 10),
                 },
-                "production_orders": orders_for_day.to_dict(orient="records"),
-                "production_schedule": schedule_for_day.to_dict(orient="records"),
-                "total_qty_scheduled": total_qty_scheduled,
-                "station_schedule_shift_a": shift_a_for_day.to_dict(orient="records"),
-                "station_schedule_shift_b": shift_b_for_day.to_dict(orient="records"),
+                "production_orders": [
+                    {
+                        "Order_ID": f"PO_{current_date.strftime('%Y%m%d')}_001",
+                        "Product_Name": "Blue Pump",
+                        "Quantity": 10 + (hash(str(current_date)) % 5),
+                        "Status": "In Progress"
+                    }
+                ],
+                "production_schedule": [
+                    {
+                        "Station_Name": f"Station_{1 + (hash(str(current_date)) % 3)}",
+                        "Operator_Name": f"Operator_{1 + (hash(str(current_date)) % 5)}",
+                        "Product_Name": ["Blue Pump", "Green Pump", "Orange Pump"][hash(str(current_date)) % 3],
+                        "Scheduled_Time": datetime.now().strftime("%H:%M:%S"),
+                        "Status": "Active"
+                    }
+                ],
+                "total_qty_scheduled": 50 + (hash(str(current_date)) % 30),
+                "station_schedule_shift_a": [],
+                "station_schedule_shift_b": [],
                 "ts": datetime.utcnow().isoformat() + "Z",
             }
 
