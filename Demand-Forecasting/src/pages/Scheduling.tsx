@@ -110,30 +110,33 @@ const Scheduling = () => {
     }
   }, [readyState]);
   
-  // Build day-wise Gantt chart data from CSV tasks
+  // Build day-wise Gantt chart data from real-time and CSV tasks
   const dayWiseGanttData = useMemo(() => {
-    console.log('Processing ganttTasks:', ganttTasks);
-    if (!ganttTasks.length) return { timeSlots: [], stationData: [] };
+    const allTasks = [...ganttTasks];
+    console.log('Processing all tasks (including real-time):', allTasks);
+    
+    if (!allTasks.length) return { timeSlots: [], stationData: [], realtimeData: realtimeScheduleData };
     
     // Extract unique time slots and sort them
-    const timeSlots = [...new Set(ganttTasks.map(task => task.raw?.Time))].sort();
+    const timeSlots = [...new Set(allTasks.map(task => task.raw?.Time))].filter(Boolean).sort();
     console.log('Time slots found:', timeSlots);
     
     // Get unique stations
-    const stations = [...new Set(ganttTasks.map(task => task.raw?.Station))];
+    const stations = [...new Set(allTasks.map(task => task.raw?.Station))].filter(Boolean);
     console.log('Stations found:', stations);
     
     // Create station data with time slot activity
     const stationData = stations.map(station => {
-      const stationTasks = ganttTasks.filter(task => task.raw?.Station === station);
+      const stationTasks = allTasks.filter(task => task.raw?.Station === station);
       const timeActivity = timeSlots.map(time => {
         const taskAtTime = stationTasks.find(task => task.raw?.Time === time);
         return taskAtTime ? {
           active: true,
           operator: taskAtTime.raw?.Operator,
           product: taskAtTime.raw?.Product_Name,
-          unit: taskAtTime.raw?.Unit
-        } : { active: false };
+          unit: taskAtTime.raw?.Unit,
+          isRealtime: taskAtTime.id?.startsWith('realtime_')
+        } : { active: false, isRealtime: false };
       });
       
       return {
@@ -142,9 +145,9 @@ const Scheduling = () => {
       };
     });
     
-    console.log('Final dayWiseGanttData:', { timeSlots, stationData });
-    return { timeSlots, stationData };
-  }, [ganttTasks]);
+    console.log('Final dayWiseGanttData:', { timeSlots, stationData, realtimeCount: realtimeScheduleData.length });
+    return { timeSlots, stationData, realtimeData: realtimeScheduleData };
+  }, [ganttTasks, realtimeScheduleData]);
 
   const fetchSchedulingData = async () => {
     setLoading(true);
