@@ -330,8 +330,8 @@ const Scheduling = () => {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Station Workload */}
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
             <CardTitle>Station Workload Distribution</CardTitle>
           </CardHeader>
           <CardContent>
@@ -343,7 +343,11 @@ const Scheduling = () => {
                     <XAxis dataKey="station" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="Total_Units" fill="#8884d8" />
+                    <Bar dataKey="Total_Units">
+                      {scheduleChart.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -358,8 +362,8 @@ const Scheduling = () => {
         </Card>
 
         {/* Operator Workload */}
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-green-500 to-teal-600 text-white">
             <CardTitle>Operator Workload</CardTitle>
           </CardHeader>
           <CardContent>
@@ -371,7 +375,11 @@ const Scheduling = () => {
                     <XAxis dataKey="operator" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="Total_Units" fill="#82ca9d" />
+                    <Bar dataKey="Total_Units">
+                      {operatorWorkload.slice(0, 10).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -386,8 +394,8 @@ const Scheduling = () => {
         </Card>
 
         {/* Attendance Overview */}
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
             <CardTitle>Attendance Overview</CardTitle>
           </CardHeader>
           <CardContent>
@@ -408,8 +416,8 @@ const Scheduling = () => {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      <Cell fill="#00C49F" />
-                      <Cell fill="#FF8042" />
+                      <Cell fill="#22c55e" />
+                      <Cell fill="#ef4444" />
                     </Pie>
                     <Tooltip />
                   </PieChart>
@@ -426,8 +434,8 @@ const Scheduling = () => {
         </Card>
 
         {/* Operator Insights */}
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
             <CardTitle>AI Operator Insights</CardTitle>
           </CardHeader>
           <CardContent>
@@ -435,9 +443,9 @@ const Scheduling = () => {
               {operatorInsights.length > 0 ? (
                 <div className="space-y-2">
                   {operatorInsights.map((insight, index) => (
-                    <div key={index} className="p-3 bg-muted/20 rounded-lg">
-                      <p className="text-sm font-medium">{insight.operator_id}</p>
-                      <div className="text-xs text-muted-foreground mt-1">
+                    <div key={index} className="p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border-l-4 border-orange-400">
+                      <p className="text-sm font-medium text-orange-800">{insight.operator_id}</p>
+                      <div className="text-xs text-gray-700 mt-1">
                         <MarkdownRenderer 
                           content={insight.ai_insight || 'No insight available'} 
                         />
