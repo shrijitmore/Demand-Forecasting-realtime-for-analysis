@@ -141,14 +141,20 @@ def insights(period):
 @app.route("/api/sales/kpis", methods=["GET"])
 def kpis():
     df = load_sales_data()
-    if df is None:
+    if df is None or df.empty:
         return jsonify({"error": "Sales data not found"})
     try:
+        # Fix column names to match the actual CSV structure
+        total_orders = int(df["Order Item Id"].nunique()) if "Order Item Id" in df.columns else 0
+        total_sales = round(float(df["Sales"].sum()), 2) if "Sales" in df.columns else 0
+        avg_discount = round(float(df["Order Item Discount Rate"].mean()) * 100, 2) if "Order Item Discount Rate" in df.columns else 0
+        late_deliveries = int(df[df["Late_delivery_risk"] == 1].shape[0]) if "Late_delivery_risk" in df.columns else 0
+        
         return jsonify({
-            "total_orders": int(df["Order_Item_Id"].nunique()),
-            "total_sales": round(float(df["Sales"].sum()), 2),
-            "avg_discount": round(float(df["Order_Item_Discount_Rate"].mean()) * 100, 2),
-            "late_deliveries": int(df[df["Late_delivery_risk"] == 1].shape[0])
+            "total_orders": total_orders,
+            "total_sales": total_sales,
+            "avg_discount": avg_discount,
+            "late_deliveries": late_deliveries
         })
     except Exception as e:
         print("Error in KPIs:", e)
