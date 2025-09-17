@@ -231,63 +231,9 @@ export const api = {
 
   // ─── SCHEDULING & OPERATOR APIs ───────────────────────────
 
-  // Get production KPIs
-  getProductionKPIs: async (): Promise<ProductionKPIs> => {
-    const response = await fetch(`${API_BASE_URL}/api/kpis`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get schedule data
-  getSchedule: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/schedule`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get station chart data
-  getScheduleChart: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/schedule/chart`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get operator workload
-  getOperatorWorkload: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/schedule/operator_workload`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get attendance data
-  getAttendance: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/attendance`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get attendance table data
-  getAttendanceTable: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/attendance/table`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  },
-
-  // Get leave requests
-  getLeaves: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/leaves`);
+  // Get operators
+  getOperators: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/operators`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -296,30 +242,68 @@ export const api = {
 
   // Get operator insights
   getOperatorInsights: async () => {
-    // Use dedicated operator insights endpoint to avoid collision with forecasting insights
-    const response = await fetch(`${API_BASE_URL}/api/operator-insights`);
+    const response = await fetch(`${API_BASE_URL}/api/operators/insights`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
   },
 
-  // Get insights by operator
+  // Get attendance for a specific month
+  getAttendance: async (month: string = 'january') => {
+    const response = await fetch(`${API_BASE_URL}/api/operators/attendance/${month}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get leave requests for a specific month
+  getLeaves: async (month: string = 'january') => {
+    const response = await fetch(`${API_BASE_URL}/api/operators/leaves/${month}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Mock functions for legacy compatibility (these would need to be implemented in Python backend)
+  getProductionKPIs: async (): Promise<ProductionKPIs> => {
+    // Mock data - in real scenario add this endpoint to Python backend
+    return {
+      total_operators: 50,
+      absent_today: 5,
+      total_units_scheduled: 1000,
+      unique_products: 3
+    };
+  },
+
+  getSchedule: async () => {
+    // This would be implemented using the WebSocket data or a dedicated endpoint
+    return [];
+  },
+
+  getScheduleChart: async () => {
+    // Mock data for station chart
+    return [];
+  },
+
+  getOperatorWorkload: async () => {
+    return [];
+  },
+
+  getAttendanceTable: async () => {
+    return api.getAttendance('january');
+  },
+
   getInsightsByOperator: async (operatorId: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/insights1/${operatorId}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    const insights = await api.getOperatorInsights();
+    return insights.filter((insight: any) => insight.operator_id === operatorId);
   },
 
-  // Get operator dropdown data
   getOperatorsDropdown: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/operators/dropdown`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    const operators = await api.getOperators();
+    return operators.map((op: any) => op.operator_id);
   },
 
   // ─── SUPPLIER PERFORMANCE APIs ───────────────────────────
