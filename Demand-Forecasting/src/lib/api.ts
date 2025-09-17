@@ -308,102 +308,92 @@ export const api = {
 
   // ─── SUPPLIER PERFORMANCE APIs ───────────────────────────
 
-  // Get supplier data by endpoint and supplier
+  // Get all suppliers
+  getSuppliers: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get supplier by SKU
+  getSupplierBySKU: async (skuNo: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/${skuNo}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);  
+    }
+    return response.json();
+  },
+
+  // Get supplier AI insights by SKU
+  getSupplierAIInsights: async (skuNo: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/insights/${skuNo}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Get alternate suppliers by SKU
+  getAlternateSuppliersBySKU: async (skuNo: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/suppliers/alternate/${skuNo}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  // Legacy compatibility functions
   getSupplierData: async (endpoint: string, supplier: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/suppliers/${endpoint}/${supplier}`);
+    // Mock implementation for now - would need to be updated based on Python backend structure
+    const response = await fetch(`${API_BASE_URL}/api/suppliers`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    const suppliers = await response.json();
+    return suppliers.find((s: any) => s.Supplier_Name?.toLowerCase() === supplier.toLowerCase());
   },
 
-  // Get supplier KPIs
   getSupplierKPIs: async (supplier: string): Promise<SupplierData> => {
-    const response = await fetch(`${API_BASE_URL}/api/suppliers/kpis/${supplier}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    const data = await api.getSupplierData('kpis', supplier);
+    return data || {
+      supplier: supplier,
+      lead_time_days: 0,
+      fulfillment_rate_percent: 0,
+      otd_percent: 0,  
+      late_deliveries: 0,
+      total_orders: 0
+    };
   },
 
-  // Get supplier metrics
   getSupplierMetrics: async (supplier: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/suppliers/metrics/${supplier}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    return api.getSupplierData('metrics', supplier);
   },
 
-  // Get delivery stats
   getSupplierDeliveryStats: async (supplier: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/suppliers/delivery-stats/${supplier}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
+    return api.getSupplierData('delivery-stats', supplier);
   },
 
-  // Get list of suppliers
   getSuppliersList: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/suppliers/list`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    console.log('Available suppliers:', data);
-    return data;
+    const suppliers = await api.getSuppliers();
+    return suppliers.map((s: any) => s.Supplier_Name).filter(Boolean);
   },
 
-  // Get all alternate suppliers
   getAlternateSuppliers: async () => {
-    try {
-      console.log('Fetching all alternate suppliers');
-      
-      const response = await fetch(`${API_BASE_URL}/api/suppliers/alternates`);
-      if (!response.ok) {
-        console.error(`HTTP error ${response.status} fetching alternate suppliers`);
-        return null;
-      }
-      
-      const data = await response.json();
-      console.log('Raw alternate suppliers data:', data);
-      
-      // Transform the data structure to match UI expectations
-      const normalizedData = data.map(item => ({
-        Supplier_Name: item.supplier_name,
-        OTD_Percentage: item.otd_percentage,
-        Quality_Score: item.quality_score,
-        Email: item.email,
-        Location: item.location,
-        Avg_Lead_Time_Days: item.avg_lead_time_days,
-        Fulfillment_Rate: item.fulfillment_rate
-      }));
-      
-      console.log('Normalized alternate suppliers data:', normalizedData);
-      return normalizedData;
-    } catch (error) {
-      console.error('Error fetching alternate suppliers:', error);
-      return null;
-    }
+    const suppliers = await api.getSuppliers();
+    // This would need proper implementation based on Python backend structure
+    return suppliers;
   },
 
-  // Get supplier insight by SKU
   getSupplierInsight: async (supplier: string) => {
     try {
-      // Convert supplier name to lowercase before encoding
-      const lowercaseSupplier = supplier.toLowerCase();
-      const encodedSupplier = encodeURIComponent(lowercaseSupplier);
-      
-      const response = await fetch(`${API_BASE_URL}/api/suppliers/insight/${encodedSupplier}`);
-      if (!response.ok) {
-        console.error(`HTTP error ${response.status} fetching insight for ${supplier}`);
-        return null;
+      const suppliers = await api.getSuppliers();
+      const supplierData = suppliers.find((s: any) => s.Supplier_Name?.toLowerCase() === supplier.toLowerCase());
+      if (supplierData && supplierData.SKU_No) {
+        return await api.getSupplierAIInsights(supplierData.SKU_No);
       }
-      
-      const data = await response.json();
-      console.log('Supplier insight data:', data);
-      return data;
+      return null;
     } catch (error) {
       console.error('Error fetching supplier insight:', error);
       return null;
