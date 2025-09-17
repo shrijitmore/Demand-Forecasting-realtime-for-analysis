@@ -239,19 +239,41 @@ const Scheduling = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   return (
-    <div className="w-full p-4 bg-background space-y-4">
+    <div className="w-full p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Production Scheduling</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Production Scheduling</h2>
         <div className="flex items-center space-x-2">
+          {/* WebSocket Connection Status */}
+          <div className="flex items-center space-x-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm border">
+            {connectionStatus === 'Connected' ? (
+              <Wifi className="h-4 w-4 text-green-600" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-red-600" />
+            )}
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {connectionStatus}
+            </span>
+            {realtimeScheduleData.length > 0 && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                {realtimeScheduleData.length} updates
+              </span>
+            )}
+          </div>
           <Button
             variant="outline"
             size="icon"
             onClick={handleRefresh}
             disabled={loading}
+            className="bg-white hover:bg-gray-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleExport}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleExport}
+            className="bg-white hover:bg-gray-50"
+          >
             <Download className="h-4 w-4" />
           </Button>
         </div>
