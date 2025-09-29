@@ -2802,3 +2802,145 @@
 2025-09-17 08:26:56,761 WARN exited: frontend (exit status 1; not expected)
 2025-09-17 08:26:57,764 INFO spawned: 'frontend' with pid 38643
 2025-09-17 08:26:59,635 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:13:51,267 INFO Set uid to user 0 succeeded
+2025-09-29 10:13:51,271 INFO RPC interface 'supervisor' initialized
+2025-09-29 10:13:51,271 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-09-29 10:13:51,271 INFO supervisord started with pid 503
+2025-09-29 10:13:52,273 INFO spawned: 'backend' with pid 504
+2025-09-29 10:13:52,274 INFO spawned: 'frontend' with pid 505
+2025-09-29 10:13:52,303 WARN exited: backend (exit status 1; not expected)
+2025-09-29 10:13:52,433 WARN exited: frontend (exit status 127; not expected)
+2025-09-29 10:13:53,435 INFO spawned: 'backend' with pid 517
+2025-09-29 10:13:53,436 INFO spawned: 'frontend' with pid 518
+2025-09-29 10:13:53,465 WARN exited: backend (exit status 1; not expected)
+2025-09-29 10:13:53,611 WARN exited: frontend (exit status 127; not expected)
+2025-09-29 10:13:55,614 INFO spawned: 'backend' with pid 530
+2025-09-29 10:13:55,615 INFO spawned: 'frontend' with pid 531
+2025-09-29 10:13:55,644 WARN exited: backend (exit status 1; not expected)
+2025-09-29 10:13:55,775 WARN exited: frontend (exit status 127; not expected)
+2025-09-29 10:13:58,779 INFO spawned: 'backend' with pid 543
+2025-09-29 10:13:58,780 INFO spawned: 'frontend' with pid 544
+2025-09-29 10:13:58,811 WARN exited: backend (exit status 1; not expected)
+2025-09-29 10:13:58,889 INFO gave up: backend entered FATAL state, too many start retries too quickly
+2025-09-29 10:13:58,933 WARN exited: frontend (exit status 127; not expected)
+2025-09-29 10:13:59,934 INFO gave up: frontend entered FATAL state, too many start retries too quickly
+2025-09-29 10:15:57,769 INFO Set uid to user 0 succeeded
+2025-09-29 10:17:41,172 INFO spawned: 'frontend' with pid 848
+2025-09-29 10:17:42,247 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:42,962 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:43,964 INFO spawned: 'frontend' with pid 921
+2025-09-29 10:17:45,041 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:45,673 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:46,675 INFO spawned: 'frontend' with pid 964
+2025-09-29 10:17:48,278 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:48,355 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:49,309 INFO spawned: 'frontend' with pid 1011
+2025-09-29 10:17:50,439 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:51,016 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:52,018 INFO spawned: 'frontend' with pid 1084
+2025-09-29 10:17:53,046 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:53,667 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:54,669 INFO spawned: 'frontend' with pid 1127
+2025-09-29 10:17:55,743 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:56,383 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:17:57,385 INFO spawned: 'frontend' with pid 1172
+2025-09-29 10:17:58,443 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:17:59,039 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:00,041 INFO spawned: 'frontend' with pid 1215
+2025-09-29 10:18:01,244 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:01,780 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:02,782 INFO spawned: 'frontend' with pid 1291
+2025-09-29 10:18:03,841 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:04,470 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:05,472 INFO spawned: 'frontend' with pid 1334
+2025-09-29 10:18:07,158 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:07,187 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:08,189 INFO spawned: 'frontend' with pid 1416
+2025-09-29 10:18:09,345 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:09,880 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:10,882 INFO spawned: 'frontend' with pid 1459
+2025-09-29 10:18:11,943 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:12,581 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:13,583 INFO spawned: 'frontend' with pid 1513
+2025-09-29 10:18:14,647 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:15,188 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:16,190 INFO spawned: 'frontend' with pid 1555
+2025-09-29 10:18:17,246 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:17,885 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:18,887 INFO spawned: 'frontend' with pid 1610
+2025-09-29 10:18:20,556 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:20,584 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:21,586 INFO spawned: 'frontend' with pid 1652
+2025-09-29 10:18:23,253 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:23,280 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:24,282 INFO spawned: 'frontend' with pid 1695
+2025-09-29 10:18:25,342 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:25,945 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:26,947 INFO spawned: 'frontend' with pid 1738
+2025-09-29 10:18:27,947 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:28,643 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:29,645 INFO spawned: 'frontend' with pid 1780
+2025-09-29 10:18:30,743 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:31,288 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:32,290 INFO spawned: 'frontend' with pid 1822
+2025-09-29 10:18:33,347 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:33,982 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:34,984 INFO spawned: 'frontend' with pid 1865
+2025-09-29 10:18:36,558 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:36,586 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:37,588 INFO spawned: 'frontend' with pid 1907
+2025-09-29 10:18:39,047 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:39,580 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:40,582 INFO spawned: 'frontend' with pid 1950
+2025-09-29 10:18:41,645 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:42,279 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:43,281 INFO spawned: 'frontend' with pid 2042
+2025-09-29 10:18:44,740 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:45,865 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:46,867 INFO spawned: 'frontend' with pid 2372
+2025-09-29 10:18:48,454 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:48,543 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:49,545 INFO spawned: 'frontend' with pid 2415
+2025-09-29 10:18:50,642 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:51,266 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:52,269 INFO spawned: 'frontend' with pid 2457
+2025-09-29 10:18:53,346 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:53,972 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:54,974 INFO spawned: 'frontend' with pid 2499
+2025-09-29 10:18:56,044 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:56,849 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:18:57,852 INFO spawned: 'frontend' with pid 2638
+2025-09-29 10:18:59,140 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:18:59,682 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:00,684 INFO spawned: 'frontend' with pid 2777
+2025-09-29 10:19:01,844 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:04,357 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:05,360 INFO spawned: 'frontend' with pid 3190
+2025-09-29 10:19:07,140 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:07,170 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:08,172 INFO spawned: 'frontend' with pid 3281
+2025-09-29 10:19:09,970 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:11,145 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:12,147 INFO spawned: 'frontend' with pid 3571
+2025-09-29 10:19:13,245 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:13,955 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:14,957 INFO spawned: 'frontend' with pid 3631
+2025-09-29 10:19:16,139 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:17,045 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:18,047 INFO spawned: 'frontend' with pid 3744
+2025-09-29 10:19:19,641 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:21,491 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:22,540 INFO spawned: 'frontend' with pid 4294
+2025-09-29 10:19:23,941 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:27,348 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:28,350 INFO spawned: 'frontend' with pid 4602
+2025-09-29 10:19:30,044 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:31,579 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:32,581 INFO spawned: 'frontend' with pid 4705
+2025-09-29 10:19:33,643 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:34,340 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:35,341 INFO spawned: 'frontend' with pid 4755
+2025-09-29 10:19:36,441 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-29 10:19:37,150 WARN exited: frontend (exit status 1; not expected)
+2025-09-29 10:19:38,151 INFO spawned: 'frontend' with pid 4798
+2025-09-29 10:19:39,956 INFO success: frontend entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
