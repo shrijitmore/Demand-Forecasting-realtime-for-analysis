@@ -31,6 +31,7 @@ const Scheduling = () => {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
   const [operatorInsights, setOperatorInsights] = useState<any[]>([]);
+  const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [ganttTasks, setGanttTasks] = useState<any[]>([]);
   const [realtimeScheduleData, setRealtimeScheduleData] = useState<WebSocketScheduleData[]>([]);
@@ -163,14 +164,15 @@ const Scheduling = () => {
     setLoading(true);
     
     try {
-      const [kpis, scheduleData, chartData, workload, attendanceData, leavesData, insights] = await Promise.allSettled([
+      const [kpis, scheduleData, chartData, workload, attendanceData, leavesData, insights, operatorsData] = await Promise.allSettled([
         apiCall(() => api.getProductionKPIs()),
         apiCall(() => api.getSchedule()),
         apiCall(() => api.getScheduleChart()),
         apiCall(() => api.getOperatorWorkload()),
         apiCall(() => api.getAttendance()),
         apiCall(() => api.getLeaves()),
-        apiCall(() => api.getOperatorInsights())
+        apiCall(() => api.getOperatorInsights()),
+        apiCall(() => api.getOperators())
       ]);
 
       setProductionKPIs(kpis.status === 'fulfilled' ? kpis.value : null);
@@ -179,7 +181,8 @@ const Scheduling = () => {
       setOperatorWorkload(workload.status === 'fulfilled' ? (workload.value || []) : []);
       setAttendance(attendanceData.status === 'fulfilled' ? (attendanceData.value || []) : []);
       setLeaves(leavesData.status === 'fulfilled' ? (leavesData.value || []) : []);
-      setOperatorInsights(insights.status === 'fulfilled' ? (insights.value?.insights || []) : []);
+      setOperatorInsights(insights.status === 'fulfilled' ? (insights.value || []) : []);
+      setOperators(operatorsData.status === 'fulfilled' ? (operatorsData.value || []) : []);
       
       // Debug logging
       console.log('Scheduling Data Loaded:', {
@@ -189,7 +192,8 @@ const Scheduling = () => {
         workload: workload.status === 'fulfilled' ? workload.value?.length : 0,
         attendanceData: attendanceData.status === 'fulfilled' ? attendanceData.value?.length : 0,
         leavesData: leavesData.status === 'fulfilled' ? leavesData.value?.length : 0,
-        insights: insights.status === 'fulfilled' ? insights.value?.insights?.length : 0,
+        insights: insights.status === 'fulfilled' ? insights.value?.length : 0,
+        operators: operatorsData.status === 'fulfilled' ? operatorsData.value?.length : 0,
       });
       
       // Log sample data for debugging
@@ -357,63 +361,48 @@ const Scheduling = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Station Workload */}
-        <Card className="shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-            <CardTitle>Station Workload Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              {scheduleChart.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={scheduleChart}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="station" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="Total_Units">
-                      {scheduleChart.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-muted-foreground">
-                    {loading ? "Loading..." : `No station workload data available (${scheduleChart.length} items)`}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Operator Workload */}
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-green-500 to-teal-600 text-white">
             <CardTitle>Operator Workload</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              {operatorWorkload.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={operatorWorkload.slice(0, 10)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="operator" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="Total_Units">
-                      {operatorWorkload.slice(0, 10).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+            <div className="overflow-x-auto max-h-96">
+              {operators.length > 0 ? (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skill Level</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station ID</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {operators.map((operator, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{operator.Operator_ID}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{operator.Operator_Name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${operator.Shift === 'A' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                            Shift {operator.Shift}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${operator.Skill_Level === 'High' ? 'bg-green-100 text-green-800' : operator.Skill_Level === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {operator.Skill_Level}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{operator.Station_ID}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-64 flex items-center justify-center">
                   <div className="text-muted-foreground">
-                    {loading ? "Loading..." : `No operator workload data available (${operatorWorkload.length} items)`}
+                    {loading ? "Loading..." : `No operators data available (${operators.length} items)`}
                   </div>
                 </div>
               )}
@@ -427,31 +416,36 @@ const Scheduling = () => {
             <CardTitle>Attendance Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="overflow-x-auto max-h-96">
               {attendance.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Present', value: attendance.filter(a => a.present === 'Yes').length },
-                        { name: 'Absent', value: attendance.filter(a => a.present === 'No').length }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      <Cell fill="#22c55e" />
-                      <Cell fill="#ef4444" />
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Present</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {attendance.map((record, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.Date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.Operator_ID}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.Operator_Name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.Present === true ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {record.Present === true ? 'Present' : 'Absent'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.Shift}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-64 flex items-center justify-center">
                   <div className="text-muted-foreground">
                     {loading ? "Loading..." : `No attendance data available (${attendance.length} items)`}
                   </div>
@@ -460,20 +454,22 @@ const Scheduling = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Operator Insights */}
+      {/* AI Operator Insights - Full Width */}
+      <div className="col-span-2">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white">
             <CardTitle>AI Operator Insights</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 overflow-y-auto">
+            <div className="h-96 overflow-y-auto">
               {operatorInsights.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {operatorInsights.map((insight, index) => (
-                    <div key={index} className="p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border-l-4 border-orange-400">
-                      <p className="text-sm font-medium text-orange-800">{insight.operator_id}</p>
-                      <div className="text-xs text-gray-700 mt-1">
+                    <div key={index} className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border-l-4 border-orange-400">
+                      <p className="text-lg font-semibold text-orange-800">{insight.Operator_ID}</p>
+                      <div className="text-sm text-gray-700 mt-2">
                         <MarkdownRenderer 
                           content={insight.ai_insight || 'No insight available'} 
                         />
@@ -558,8 +554,8 @@ const Scheduling = () => {
             {realtimeScheduleData.length > 0 && (
               <div className="p-4 border-t bg-gray-50 dark:bg-gray-800/50 text-sm">
                 <h4 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Latest Production Update</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {realtimeScheduleData.slice(-3).map((data, idx) => (
+                <div className="grid grid-cols-1 gap-4">
+                  {realtimeScheduleData.slice(-1).map((data, idx) => (
                     <div key={idx} className="bg-white dark:bg-gray-700 rounded-lg p-3 shadow">
                       <div className="flex justify-between items-start">
                         <div>
@@ -600,7 +596,7 @@ const Scheduling = () => {
       </div>
       
       {/* Additional Data Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>All Schedule Tasks</CardTitle>
@@ -659,95 +655,46 @@ const Scheduling = () => {
             </div>
           </CardContent>
         </Card>
-
-
-        {/* Attendance Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto max-h-96">
-              <table className="w-full text-sm border">
-                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
-                  <tr className="border-b">
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Operator ID</th>
-                    <th className="text-left p-2">Operator Name</th>
-                    <th className="text-left p-2">Present</th>
-                    <th className="text-left p-2">Shift</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendance.length > 0 ? attendance.map((item, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/20">
-                      <td className="p-2">{item.date}</td>
-                      <td className="p-2">{item.operator_id}</td>
-                      <td className="p-2">{item.operator_name || 'N/A'}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          item.present === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {item.present}
-                        </span>
-                      </td>
-                      <td className="p-2">{item.shift}</td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                        {loading ? "Loading attendance data..." : "No attendance data available"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Leave Requests */}
-      {leaves.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Leave Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">From Date</th>
-                    <th className="text-left p-2">To Date</th>
-                    <th className="text-left p-2">Operator ID</th>
-                    <th className="text-left p-2">Reason</th>
-                    <th className="text-left p-2">Status</th>
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+          <CardTitle>Leave Requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto max-h-96">
+            {leaves.length > 0 ? (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {leaves.slice(0, 10).map((item, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/20">
-                      <td className="p-2">{item.from_date}</td>
-                      <td className="p-2">{item.to_date}</td>
-                      <td className="p-2">{item.operator_id || '-'}</td>
-                      <td className="p-2">{item.reason}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          item.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                          item.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {item.status}
-                        </span>
-                      </td>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {leaves.map((leave, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{leave.From_Date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{leave.To_Date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{leave.Operator_ID}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{leave.Reason}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            ) : (
+              <div className="h-64 flex items-center justify-center">
+                <div className="text-muted-foreground">
+                  {loading ? "Loading..." : `No leave requests available (${leaves.length} items)`}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
