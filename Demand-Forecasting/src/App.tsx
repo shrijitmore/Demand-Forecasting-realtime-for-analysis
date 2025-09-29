@@ -7,6 +7,7 @@ import ForecastDemand from "./pages/ForecastDemand";
 import InventoryProcurement from "./pages/InventoryProcurement";
 import Scheduling from "./pages/Scheduling";
 import SupplierPerformance from "./pages/SupplierPerformance";
+import RiskAnalysis from "./pages/RiskAnalysis";
 import Home from "./components/home";
 import routes from "tempo-routes";
 import { testAPIConnection } from "@/lib/api";
@@ -39,6 +40,7 @@ function App() {
                 path="supplier-performance"
                 element={<SupplierPerformance />}
               />
+              <Route path="risk-analysis" element={<RiskAnalysis />} />
             </Route>
           </Routes>
           {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}

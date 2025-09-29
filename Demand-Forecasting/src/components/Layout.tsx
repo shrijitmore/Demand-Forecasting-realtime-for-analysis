@@ -39,6 +39,8 @@ const Layout = () => {
     else if (currentPath.includes("scheduling")) endpoint = "scheduling";
     else if (currentPath.includes("supplier-performance"))
       endpoint = "supplier-performance";
+    else if (currentPath.includes("risk-analysis"))
+      endpoint = "risk-analysis";
 
     const blob = await apiCall(() => api.exportData(endpoint));
     if (blob) {
@@ -70,11 +72,20 @@ const Layout = () => {
       label: "Inventory & Procurement",
       path: "/inventory-procurement",
     },
-    { id: "scheduling", label: "Scheduling", path: "/scheduling" },
+    { 
+      id: "scheduling", 
+      label: "Scheduling", 
+      path: "/scheduling" 
+    },
     {
       id: "supplier-performance",
       label: "Supplier Performance",
       path: "/supplier-performance",
+    },
+    {
+      id: "risk-analysis",
+      label: "Risk Analysis",
+      path: "/risk-analysis",
     },
   ];
 
