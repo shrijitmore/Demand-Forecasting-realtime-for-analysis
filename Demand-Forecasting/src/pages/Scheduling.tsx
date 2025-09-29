@@ -656,37 +656,41 @@ const Scheduling = () => {
             <CardTitle>Attendance Log</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative h-48">
-              <div style={{ height: '709%' }} className="overflow-x-auto overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 sticky top-0 bg-background">Date</th>
-                      <th className="text-left p-2 sticky top-0 bg-background">Operator ID</th>
-                      <th className="text-left p-2 sticky top-0 bg-background">Operator Name</th>
-                      <th className="text-left p-2 sticky top-0 bg-background">Present</th>
-                      <th className="text-left p-2 sticky top-0 bg-background">Shift</th>
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full text-sm border">
+                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
+                  <tr className="border-b">
+                    <th className="text-left p-2">Date</th>
+                    <th className="text-left p-2">Operator ID</th>
+                    <th className="text-left p-2">Operator Name</th>
+                    <th className="text-left p-2">Present</th>
+                    <th className="text-left p-2">Shift</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.length > 0 ? attendance.map((item, index) => (
+                    <tr key={index} className="border-b hover:bg-muted/20">
+                      <td className="p-2">{item.date}</td>
+                      <td className="p-2">{item.operator_id}</td>
+                      <td className="p-2">{item.operator_name || 'N/A'}</td>
+                      <td className="p-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          item.present === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {item.present}
+                        </span>
+                      </td>
+                      <td className="p-2">{item.shift}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {attendance.map((item, index) => (
-                      <tr key={index} className="border-b hover:bg-muted/20">
-                        <td className="p-2">{item.date}</td>
-                        <td className="p-2">{item.operator_id}</td>
-                        <td className="p-2">{item.operator_name}</td>
-                        <td className="p-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            item.present === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.present}
-                          </span>
-                        </td>
-                        <td className="p-2">{item.shift}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  )) : (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                        {loading ? "Loading attendance data..." : "No attendance data available"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
