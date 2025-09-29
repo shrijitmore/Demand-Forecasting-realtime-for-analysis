@@ -608,20 +608,20 @@ const Scheduling = () => {
           <CardContent>
             <div className="overflow-x-auto max-h-96">
               <table className="w-full text-sm border">
-                <thead className="sticky top-0 bg-gray-50">
+                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
                   <tr className="border-b">
-                    <th className="p-2">Type</th>
-                    <th className="p-2">Station</th>
-                    <th className="p-2">Operator</th>
-                    <th className="p-2">Product</th>
-                    <th className="p-2">Scheduled Date</th>
-                    <th className="p-2">Time</th>
-                    <th className="p-2">Status</th>
+                    <th className="p-2 text-left">Type</th>
+                    <th className="p-2 text-left">Station</th>
+                    <th className="p-2 text-left">Operator</th>
+                    <th className="p-2 text-left">Product</th>
+                    <th className="p-2 text-left">Scheduled Date</th>
+                    <th className="p-2 text-left">Time</th>
+                    <th className="p-2 text-left">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ganttTasks.map((task, idx) => (
-                    <tr key={task.id || idx} className={`border-b ${task.id?.startsWith('realtime_') ? 'bg-green-50' : ''}`}>
+                  {ganttTasks.length > 0 ? ganttTasks.map((task, idx) => (
+                    <tr key={task.id || idx} className={`border-b hover:bg-muted/20 ${task.id?.startsWith('realtime_') ? 'bg-green-50 dark:bg-green-900/20' : ''}`}>
                       <td className="p-2">
                         {task.id?.startsWith('realtime_') ? (
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">LIVE</span>
@@ -636,13 +636,24 @@ const Scheduling = () => {
                       <td className="p-2">{task.raw?.Time || '-'}</td>
                       <td className="p-2">
                         {task.start && task.end ? (
-                          <span className="text-green-700">Scheduled</span>
+                          <span className="text-green-700 dark:text-green-400">Scheduled</span>
                         ) : (
-                          <span className="text-red-700">Missing Time</span>
+                          <span className="text-red-700 dark:text-red-400">Missing Time</span>
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                        {loading 
+                          ? "Loading schedule tasks..." 
+                          : connectionStatus === 'Connected' 
+                            ? "Waiting for schedule data from WebSocket..." 
+                            : "No schedule tasks available - check WebSocket connection"
+                        }
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
