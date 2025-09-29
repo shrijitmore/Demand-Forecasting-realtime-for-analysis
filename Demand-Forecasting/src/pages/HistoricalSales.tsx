@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, IndianRupee, ShoppingCart, Truck, AlertTriangle, Clock, TrendingUp, TrendingDown } from "lucide-react";
@@ -22,14 +20,15 @@ const HistoricalSales = () => {
   const [monthlyInsights, setMonthlyInsights] = useState<any[]>([]);
   const [quarterlyInsights, setQuarterlyInsights] = useState<any[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'yearly' | 'monthly' | 'quarterly'>('yearly');
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
 
   const fetchSalesData = async () => {
     setLoading(true);
 
     try {
-      const [kpis, city, category, monthly, shipping, region, products] = await Promise.all([
+      const [kpisR, cityR, categoryR, monthlyR, shippingR, regionR, productsR] = await Promise.allSettled([
         apiCall(() => api.getSalesKPIs()),
         apiCall(() => api.getSalesMetrics('city-sales')),
         apiCall(() => api.getSalesMetrics('category-distribution')),
@@ -39,15 +38,23 @@ const HistoricalSales = () => {
         apiCall(() => api.getSalesMetrics('top-products'))
       ]);
 
-      // Debug: Log the data being returned
+      const kpis = kpisR.status === 'fulfilled' ? kpisR.value : null;
+      const city = cityR.status === 'fulfilled' ? cityR.value : null;
+      const category = categoryR.status === 'fulfilled' ? categoryR.value : null;
+      const monthly = monthlyR.status === 'fulfilled' ? monthlyR.value : null;
+      const shipping = shippingR.status === 'fulfilled' ? shippingR.value : null;
+      const region = regionR.status === 'fulfilled' ? regionR.value : null;
+      const products = productsR.status === 'fulfilled' ? productsR.value : null;
+
+      // Debug: Log the data being returned (with statuses)
       console.log('Sales data received:', {
-        kpis,
-        city,
-        category,
-        monthly,
-        shipping,
-        region,
-        products
+        kpisStatus: kpisR.status,
+        cityStatus: cityR.status,
+        categoryStatus: categoryR.status,
+        monthlyStatus: monthlyR.status,
+        shippingStatus: shippingR.status,
+        regionStatus: regionR.status,
+        productsStatus: productsR.status,
       });
 
       // Set data with null checks
@@ -60,18 +67,44 @@ const HistoricalSales = () => {
       setTopProducts(products && products.products && products.sales ? products : null);
 
       try {
-        const [yearlyData, monthlyData, quarterlyData] = await Promise.all([
-          api.getHistoricalInsights('yearly'),
-          api.getHistoricalInsights('monthly'),
-          api.getHistoricalInsights('quarterly')
-        ]);
+        console.log('Fetching historical insights data...');
+        
+        // Test each API call individually to see which one fails
+        const yearlyResponse = await apiCall(() => api.getHistoricalInsights('yearly'));
+        const monthlyResponse = await apiCall(() => api.getHistoricalInsights('monthly'));
+        const quarterlyResponse = await apiCall(() => api.getHistoricalInsights('quarterly'));
+        
+        console.log('Insights API responses:', {
+          yearly: yearlyResponse ? 'Success' : 'Failed',
+          monthly: monthlyResponse ? 'Success' : 'Failed',
+          quarterly: quarterlyResponse ? 'Success' : 'Failed'
+        });
+        
+        const yearlyData = yearlyResponse || [];
+        const monthlyData = monthlyResponse || [];
+        const quarterlyData = quarterlyResponse || [];
+        
+        console.log('Raw insights data:', {
+          yearly: yearlyData,
+          monthly: monthlyData,
+          quarterly: quarterlyData
+        });
+
+        // Normalize yearly data keys
+        const normalizedYearlyData = yearlyData.map(item => {
+          const yearKey = Object.keys(item).find(key => key.toLowerCase().includes('year')) || 'Year';
+          return {
+            Year: item[yearKey],
+            Insight: item.Insight
+          };
+        });
 
         // Normalize monthly data keys by removing BOM character if present
         const normalizedMonthlyData = monthlyData.map(item => {
           const monthKey = Object.keys(item).find(key => key.toLowerCase().includes('month')) || 'Month';
           return {
             Month: item[monthKey],
-            GPT_Bullet_Insight: item.GPT_Bullet_Insight
+            Insight: item.Insight
           };
         });
 
@@ -80,13 +113,19 @@ const HistoricalSales = () => {
           const quarterKey = Object.keys(item).find(key => key.toLowerCase().includes('quarter')) || 'Quarter';
           return {
             Quarter: item[quarterKey],
-            GPT_Quarterly_Insight: item.GPT_Quarterly_Insight
+            Insight: item.Insight
           };
         });
+        
+        console.log('Normalized insights data:', {
+          yearly: normalizedYearlyData,
+          monthly: normalizedMonthlyData,
+          quarterly: normalizedQuarterlyData
+        });
 
-        setYearlyInsights(yearlyData || []);
-        setMonthlyInsights(normalizedMonthlyData || []);
-        setQuarterlyInsights(normalizedQuarterlyData || []);
+        setYearlyInsights(normalizedYearlyData);
+        setMonthlyInsights(normalizedMonthlyData);
+        setQuarterlyInsights(normalizedQuarterlyData);
       } catch (insightsError) {
         console.error('Error fetching insights data:', insightsError);
         setYearlyInsights([]);
@@ -197,88 +236,6 @@ const HistoricalSales = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* SKU AI Supplier Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IndianRupee className="h-5 w-5 text-purple-600" />
-              SKU AI Supplier Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Period Selection</span>
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedPeriod === 'monthly' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Select Year</span>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {selectedPeriod === 'monthly' && selectedYear && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Select Month</span>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select month" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
-                        <SelectItem key={month} value={month}>{month}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-4 mt-4">
-                {selectedPeriod === 'yearly' && yearlyInsights.map((insight, index) => (
-                  <div key={index} className="p-4 bg-muted rounded-lg">
-                    <MarkdownRenderer markdown={insight.GPT_Bullet_Insight || 'No insights available'} />
-                  </div>
-                ))}
-
-                {selectedPeriod === 'monthly' && selectedYear && selectedMonth && (
-                  monthlyInsights
-                    .filter(insight => insight.Month === `${selectedMonth} ${selectedYear}`)
-                    .map((insight, index) => (
-                      <div key={index} className="p-4 bg-muted rounded-lg">
-                        <MarkdownRenderer markdown={insight.GPT_Bullet_Insight || 'No insights available'} />
-                      </div>
-                    ))
-                )}
-
-                {selectedPeriod === 'quarterly' && quarterlyInsights.map((insight, index) => (
-                  <div key={index} className="p-4 bg-muted rounded-lg">
-                    <MarkdownRenderer markdown={insight.GPT_Quarterly_Insight || 'No insights available'} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         {/* Monthly Sales Trend */}
         <Card>
           <CardHeader>
@@ -291,13 +248,13 @@ const HistoricalSales = () => {
                   <LineChart data={monthlySales.months.map((month: string, index: number) => ({
                     month,
                     sales: monthlySales.sales[index]
-                  }))}>
+                  }))}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
                     <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} />
-                    <Tooltip />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -410,6 +367,7 @@ const HistoricalSales = () => {
                       labelLine={false}
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       outerRadius={80}
+                      innerRadius={50}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -460,7 +418,7 @@ const HistoricalSales = () => {
       </div>
 
       {/* Additional Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Regional Sales */}
         <Card>
           <CardHeader>
@@ -539,155 +497,6 @@ const HistoricalSales = () => {
           </CardContent>
         </Card>
 
-        {/* Historical AI Insights */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Historical AI Insights</CardTitle>
-                <div className="flex items-center gap-4">
-                  <Select
-                    value={selectedPeriod}
-                    onValueChange={(value) => {
-                      setSelectedPeriod(value as 'yearly' | 'monthly' | 'quarterly');
-                      setSelectedYear('');
-                      setSelectedMonth('');
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select Period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yearly">Yearly Insights</SelectItem>
-                      <SelectItem value="monthly">Monthly Insights</SelectItem>
-                      <SelectItem value="quarterly">Quarterly Insights</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {selectedPeriod === 'yearly' && yearlyInsights.length > 0 && (
-                    <Select
-                      value={selectedYear}
-                      onValueChange={(value) => {
-                        setSelectedYear(value);
-                      }}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearlyInsights.map((insight, index) => (
-                          <SelectItem key={`year-${index}-${insight.Year}`} value={insight.Year}>
-                            {insight.Year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {selectedPeriod === 'monthly' && monthlyInsights.length > 0 && (
-                    <Select
-                      value={selectedMonth}
-                      onValueChange={(value) => {
-                        setSelectedMonth(value);
-                      }}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select Month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {monthlyInsights.map((insight, index) => (
-                          <SelectItem key={`month-${index}-${insight.Month}`} value={insight.Month}>
-                            {insight.Month}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {selectedPeriod === 'quarterly' && quarterlyInsights.length > 0 && (
-                    <Select
-                      value={selectedMonth}
-                      onValueChange={(value) => {
-                        setSelectedMonth(value);
-                      }}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select Quarter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {quarterlyInsights.map((insight, index) => (
-                          <SelectItem key={`quarter-${index}-${insight.Quarter.replace(/^\uFEFF/, '')}`} value={insight.Quarter.replace(/^\uFEFF/, '')}>
-                            {insight.Quarter}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="h-32 flex items-center justify-center">
-                  <div className="text-muted-foreground">Loading...</div>
-                </div>
-              ) : selectedPeriod === 'yearly' && yearlyInsights.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedYear ? (
-                    <div className="prose max-w-none">
-                      <h3 className="text-lg font-semibold mb-3">Year: {selectedYear}</h3>
-                      <div className="text-muted-foreground">
-                        <MarkdownRenderer
-                          content={yearlyInsights.find((i) => i.Year === selectedYear)?.GPT_Yearly_Insight || 'No insights available'}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground">
-                      Please select a year to view insights
-                    </div>
-                  )}
-                </div>
-              ) : selectedPeriod === 'monthly' && monthlyInsights.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedMonth ? (
-                    <div className="prose max-w-none">
-                      <h3 className="text-lg font-semibold mb-3">Month: {selectedMonth}</h3>
-                      <div className="text-muted-foreground">
-                        <MarkdownRenderer
-                          content={monthlyInsights.find((i) => i.Month === selectedMonth)?.GPT_Bullet_Insight || 'No insights available'}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground">
-                      Please select a month to view insights
-                    </div>
-                  )}
-                </div>
-              ) : selectedPeriod === 'quarterly' && quarterlyInsights.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedMonth ? (
-                    <div className="prose max-w-none">
-                      <h3 className="text-lg font-semibold mb-3">Quarter: {selectedMonth}</h3>
-                      <div className="text-muted-foreground">
-                        <MarkdownRenderer
-                          content={quarterlyInsights.find((i) => i.Quarter === selectedMonth)?.GPT_Quarterly_Insight || 'No insights available'}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground">
-                      Please select a quarter to view insights
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="h-32 flex items-center justify-center">
-                  <div className="text-muted-foreground">No insights available</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Top Products */}
         <Card>
           <CardHeader>
@@ -733,6 +542,159 @@ const HistoricalSales = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Historical AI Insights - Moved to Last */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Historical AI Insights</CardTitle>
+            <div className="flex items-center gap-4">
+              <Select
+                value={selectedPeriod}
+                onValueChange={(value) => {
+                  setSelectedPeriod(value as 'yearly' | 'monthly' | 'quarterly');
+                  // Reset filters when period changes
+                  setSelectedYear('all');
+                  setSelectedMonth('all');
+                  setSelectedQuarter('all');
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yearly">Yearly Insights</SelectItem>
+                  <SelectItem value="monthly">Monthly Insights</SelectItem>
+                  <SelectItem value="quarterly">Quarterly Insights</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Filter dropdown based on selected period */}
+              {selectedPeriod === 'yearly' && yearlyInsights.length > 0 && (
+                <Select
+                  value={selectedYear}
+                  onValueChange={(value) => {
+                    setSelectedYear(value);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {[...new Set(yearlyInsights.map(insight => insight.Year))].sort().map((year) => (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {selectedPeriod === 'monthly' && monthlyInsights.length > 0 && (
+                <Select
+                  value={selectedMonth}
+                  onValueChange={(value) => {
+                    setSelectedMonth(value);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Months</SelectItem>
+                    {[...new Set(monthlyInsights.map(insight => insight.Month))].sort().map((month) => (
+                      <SelectItem key={month} value={month}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {selectedPeriod === 'quarterly' && quarterlyInsights.length > 0 && (
+                <Select
+                  value={selectedQuarter}
+                  onValueChange={(value) => {
+                    setSelectedQuarter(value);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Quarter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Quarters</SelectItem>
+                    {[...new Set(quarterlyInsights.map(insight => insight.Quarter))].sort().map((quarter) => (
+                      <SelectItem key={quarter} value={quarter}>
+                        {quarter}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-32 flex items-center justify-center">
+              <div className="text-muted-foreground">Loading...</div>
+            </div>
+          ) : selectedPeriod === 'yearly' && yearlyInsights.length > 0 ? (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold mb-4">Yearly Insights</h3>
+              {yearlyInsights
+                .filter(insight => selectedYear === 'all' || insight.Year === selectedYear)
+                .map((insight, index) => (
+                <div key={`yearly-${index}`} className="prose max-w-none border-l-4 border-blue-500 pl-4 py-2">
+                  <h4 className="text-md font-semibold mb-2">{insight.Year}</h4>
+                  <div className="text-muted-foreground">
+                    <MarkdownRenderer
+                      content={insight.Insight || 'No insights available'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : selectedPeriod === 'monthly' && monthlyInsights.length > 0 ? (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold mb-4">Monthly Insights</h3>
+              {monthlyInsights
+                .filter(insight => selectedMonth === 'all' || insight.Month === selectedMonth)
+                .map((insight, index) => (
+                <div key={`monthly-${index}`} className="prose max-w-none border-l-4 border-green-500 pl-4 py-2">
+                  <h4 className="text-md font-semibold mb-2">{insight.Month}</h4>
+                  <div className="text-muted-foreground">
+                    <MarkdownRenderer
+                      content={insight.Insight || 'No insights available'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : selectedPeriod === 'quarterly' && quarterlyInsights.length > 0 ? (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold mb-4">Quarterly Insights</h3>
+              {quarterlyInsights
+                .filter(insight => selectedQuarter === 'all' || insight.Quarter === selectedQuarter)
+                .map((insight, index) => (
+                <div key={`quarterly-${index}`} className="prose max-w-none border-l-4 border-purple-500 pl-4 py-2">
+                  <h4 className="text-md font-semibold mb-2">{insight.Quarter}</h4>
+                  <div className="text-muted-foreground">
+                    <MarkdownRenderer
+                      content={insight.Insight || 'No insights available'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center">
+              <div className="text-muted-foreground">No insights available</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

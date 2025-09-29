@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "http://192.168.10.165:5000";
 
 // Types for API responses
 export interface ForecastData {
@@ -143,9 +143,10 @@ export const api = {
   // Get reorder chart data
   getReorderChart: async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/inventory/reorder_chart`);
+      // Primary endpoint as per backend: /api/inventory/reorder
+      const response = await fetch(`${API_BASE_URL}/api/inventory/reorder`);
       if (!response.ok) {
-        console.warn('Reorder chart endpoint not available, using alerts data');
+        console.warn('Reorder endpoint not available, using alerts data');
         const alertsResponse = await fetch(`${API_BASE_URL}/api/inventory/alerts`);
         const alertsData = await alertsResponse.json();
         return alertsData.map((item: any) => ({
@@ -344,40 +345,85 @@ export const api = {
     return response.json();
   },
 
-  // Legacy compatibility functions
-  getSupplierData: async (endpoint: string, supplier: string) => {
-    // Mock implementation for now - would need to be updated based on Python backend structure
+  // Helper: find supplier row by Supplier_Name (case-insensitive)
+  getSupplierData: async (_endpoint: string, supplier: string) => {
     const response = await fetch(`${API_BASE_URL}/api/suppliers`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const suppliers = await response.json();
-    return suppliers.find((s: any) => s.Supplier_Name?.toLowerCase() === supplier.toLowerCase());
+    return suppliers.find((s: any) => (s.Supplier_Name || s.supplier_name || '').toLowerCase() === supplier.toLowerCase());
   },
 
   getSupplierKPIs: async (supplier: string): Promise<SupplierData> => {
-    const data = await api.getSupplierData('kpis', supplier);
-    return data || {
-      supplier: supplier,
-      lead_time_days: 0,
-      fulfillment_rate_percent: 0,
-      otd_percent: 0,  
-      late_deliveries: 0,
-      total_orders: 0
+    const row = await api.getSupplierData('kpis', supplier);
+    if (!row) {
+      return {
+        supplier,
+        lead_time_days: 0,
+        fulfillment_rate_percent: 0,
+        otd_percent: 0,
+        late_deliveries: 0,
+        total_orders: 0,
+      };
+    }
+    const num = (v: any) => {
+      const n = parseFloat(v ?? '');
+      return isNaN(n) ? 0 : n;
+    };
+    return {
+      supplier: row.Supplier_Name || row.supplier_name || supplier,
+      lead_time_days: num(row.Lead_Time_Days || row.lead_time_days),
+      fulfillment_rate_percent: num(row.Fulfillment_Rate || row.fulfillment_rate_percent),
+      otd_percent: num(row.OTD_Percentage || row.OTD || row.otd_percent),
+      late_deliveries: Math.round(num(row.Late_Deliveries || row.late_deliveries)),
+      total_orders: Math.round(num(row.Total_Orders || row.total_orders)),
     };
   },
 
   getSupplierMetrics: async (supplier: string) => {
-    return api.getSupplierData('metrics', supplier);
+    const row = await api.getSupplierData('metrics', supplier);
+    const num = (v: any) => {
+      const n = parseFloat(v ?? '');
+      return isNaN(n) ? 0 : n;
+    };
+    return {
+      'OTD %': num(row?.OTD_Percentage || row?.OTD || row?.otd_percent),
+      'Quality Score': num(row?.Quality_Score || row?.quality_score),
+      'Fulfillment %': num(row?.Fulfillment_Rate || row?.fulfillment_rate_percent),
+    };
   },
 
   getSupplierDeliveryStats: async (supplier: string) => {
-    return api.getSupplierData('delivery-stats', supplier);
+    const row = await api.getSupplierData('delivery-stats', supplier);
+    const num = (v: any) => {
+      const n = parseFloat(v ?? '');
+      return isNaN(n) ? 0 : n;
+    };
+    const totalOrders = Math.round(num(row?.Total_Orders || row?.total_orders));
+    let late = Math.round(num(row?.Late_Deliveries || row?.late_deliveries));
+    if (!late && totalOrders && (row?.OTD_Percentage || row?.OTD || row?.otd_percent)) {
+      const otd = num(row?.OTD_Percentage || row?.OTD || row?.otd_percent) / 100;
+      late = Math.max(0, Math.round(totalOrders * (1 - otd)));
+    }
+    const on_time = Math.max(0, totalOrders - late);
+    return { on_time, late };
   },
 
   getSuppliersList: async () => {
     const suppliers = await api.getSuppliers();
     return suppliers.map((s: any) => s.Supplier_Name).filter(Boolean);
+  },
+
+  // Get unique list of SKU_No from suppliers
+  getSupplierSKUsList: async () => {
+    const suppliers = await api.getSuppliers();
+    const set = new Set<string>();
+    suppliers.forEach((s: any) => {
+      const sku = s.SKU_No || s.SKU_ID || s.SKU || s.sku_id;
+      if (sku) set.add(String(sku));
+    });
+    return Array.from(set);
   },
 
   getAlternateSuppliers: async () => {
@@ -404,7 +450,7 @@ export const api = {
 
   // Get insights by period
   getHistoricalInsights: async (period: 'monthly' | 'quarterly' | 'yearly') => {
-    const response = await fetch(`${API_BASE_URL}/api/insights/${period}`);
+    const response = await fetch(`${API_BASE_URL}/api/forecast/insights/${period}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

@@ -1,3 +1,4 @@
+// Component for forecasting demand
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,11 @@ interface Product {
 }
 
 interface ForecastData {
-  period: string;
-  total_demand: number;
-  average_demand: number;
+  Date: string;
+  Forecasted_Demand: number;
+  PRODUCT_CARD_ID: string;
+  PRODUCT_NAME: string;
+  FREQUENCY: string;
 }
 
 const ForecastDemand = () => {
@@ -33,11 +36,12 @@ const ForecastDemand = () => {
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [insightsPeriod, setInsightsPeriod] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
 
   const frequencies = [
     { value: "weekly", label: "Weekly" },
     { value: "monthly", label: "Monthly" },
-    { value: "quarterly", label: "Quarterly" }
+    { value: "daily", label: "Daily" }
   ];
 
   // Fetch products for dropdown
@@ -65,8 +69,8 @@ const ForecastDemand = () => {
       case "monthly":
         data = await apiCall(() => api.getForecastsMonthly(selectedProduct));
         break;
-      case "quarterly":
-        data = await apiCall(() => api.getForecastsQuarterly(selectedProduct));
+      case "daily":
+        data = await apiCall(() => api.getForecasts('daily'));
         break;
       default:
         data = await apiCall(() => api.getForecastsMonthly(selectedProduct));
@@ -80,30 +84,41 @@ const ForecastDemand = () => {
 
   // Fetch insights
   const fetchInsights = async () => {
-    if (!selectedProduct) return;
-    
-    const product = products.find(p => p.PRODUCT_CARD_ID === selectedProduct);
-    const data = await apiCall(() => api.getInsights(selectedMonth, selectedProduct, product?.PRODUCT_NAME));
-    if (data) {
-      console.log('Insights data received:', data);
-      setInsights(data);
+    // Forecast insights are not product-specific in backend; use selected insightsPeriod
+    const data = await apiCall(() => api.getForecastInsights(insightsPeriod));
+    if (Array.isArray(data)) {
+      // Normalize keys to a common shape
+      const normalized = data.map((item: any) => ({
+        Month: item.Month || item.month,
+        Quarter: item.Quarter || item.quarter,
+        Year: item.Year || item.year,
+        Product_Name: item.Product_Name || item.PRODUCT_NAME || item.product_name,
+        Insight: item.Insight || item.GPT_Bullet_Insight || item.GPT_Quarterly_Insight || item.GPT_Yearly_Insight || item.insight || '',
+      }));
+      // If monthly period and month is selected, filter to the chosen month
+      const filtered = insightsPeriod === 'monthly' && selectedMonth
+        ? normalized.filter((i: any) => i.Month === selectedMonth)
+        : normalized;
+      setInsights(filtered);
     } else {
-      console.log('No insights data received');
+      setInsights([]);
     }
   };
 
   // Fetch available months for the selected product
   const fetchAvailableMonths = async () => {
-    if (!selectedProduct) return;
-    
-    const product = products.find(p => p.PRODUCT_CARD_ID === selectedProduct);
-    const data = await apiCall(() => api.getInsights(undefined, selectedProduct, product?.PRODUCT_NAME));
-    if (data) {
-      const months = [...new Set(data.map((item: any) => item.Month))].sort();
+    // Months derive from forecast insights monthly endpoint
+    const data = await apiCall(() => api.getForecastInsights('monthly'));
+    if (Array.isArray(data)) {
+      const months = [...new Set(data.map((item: any) => item.Month).filter(Boolean))] as string[];
+      // Sort descending to show recent first
+      months.sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
       setAvailableMonths(months);
       if (months.length > 0 && !selectedMonth) {
         setSelectedMonth(months[0]);
       }
+    } else {
+      setAvailableMonths([]);
     }
   };
 
@@ -115,9 +130,9 @@ const ForecastDemand = () => {
 
   const handleExport = async () => {
     // Create CSV content
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Period,Total Demand,Average Demand\n"
-      + forecastData.map(row => `${row.period},${row.total_demand},${row.average_demand}`).join("\n");
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + "Date,Product Name,Forecasted Demand\n"
+      + forecastData.map(row => `${row.Date},${row.PRODUCT_NAME},${row.Forecasted_Demand}`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -145,6 +160,15 @@ const ForecastDemand = () => {
       fetchInsights();
     }
   }, [selectedMonth]);
+
+  // Refetch insights when period changes
+  useEffect(() => {
+    // If not monthly, clear selectedMonth to avoid misleading filtering/labels
+    if (insightsPeriod !== 'monthly' && selectedMonth) {
+      setSelectedMonth('');
+    }
+    fetchInsights();
+  }, [insightsPeriod]);
 
   const selectedProductName = products.find(p => p.PRODUCT_CARD_ID === selectedProduct)?.PRODUCT_NAME || "";
 
@@ -218,7 +242,7 @@ const ForecastDemand = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {forecastData.reduce((sum, item) => sum + item.total_demand, 0).toLocaleString()}
+              {forecastData.reduce((sum, item) => sum + item.Forecasted_Demand, 0).toLocaleString()}
             </div>
           </CardContent>
         </Card>
@@ -229,8 +253,8 @@ const ForecastDemand = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {forecastData.length > 0 
-                ? (forecastData.reduce((sum, item) => sum + item.average_demand, 0) / forecastData.length).toFixed(2)
+              {forecastData.length > 0
+                ? (forecastData.reduce((sum, item) => sum + item.Forecasted_Demand, 0) / forecastData.length).toFixed(2)
                 : "0"
               }
             </div>
@@ -262,11 +286,10 @@ const ForecastDemand = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={forecastData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
+                  <XAxis dataKey="Date" />
                   <YAxis />
                   <Tooltip />
-                  <Line type="monotone" dataKey="total_demand" stroke="#8884d8" strokeWidth={2} />
-                  <Line type="monotone" dataKey="average_demand" stroke="#82ca9d" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Forecasted_Demand" stroke="#8884d8" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -279,29 +302,56 @@ const ForecastDemand = () => {
       </Card>
 
       {/* Insights */}
-      {insights.length > 0 && (
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>AI Insights for {selectedMonth} ({insights.length} found)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {insights.slice(0, 3).map((insight, index) => (
+      <Card className="w-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              {insightsPeriod === 'monthly' && selectedMonth
+                ? `AI Forecast Insights • ${selectedMonth} • ${insights.length} found`
+                : `AI Forecast Insights • ${insightsPeriod.charAt(0).toUpperCase() + insightsPeriod.slice(1)} • ${insights.length} found`}
+            </CardTitle>
+            <Select value={insightsPeriod} onValueChange={(v) => setInsightsPeriod(v as 'monthly' | 'quarterly' | 'yearly')}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {insights.length > 0 ? (
+            <div className="h-64 overflow-y-auto space-y-2">
+              {insights.map((insight, index) => (
                 <div key={index} className="p-3 bg-muted/20 rounded-lg">
-                  <div className="text-xs text-muted-foreground mb-2">
-                    {insight.Month} - {insight.PRODUCT_NAME} ({insight.PRODUCT_CARD_ID})
+                  <div className="text-xs text-muted-foreground mb-2 flex flex-wrap gap-2">
+                    {insightsPeriod === 'monthly' && insight.Month && (
+                      <span className="px-2 py-0.5 rounded bg-muted text-foreground border">Month: {insight.Month}</span>
+                    )}
+                    {insightsPeriod === 'quarterly' && insight.Quarter && (
+                      <span className="px-2 py-0.5 rounded bg-muted text-foreground border">Quarter: {insight.Quarter}</span>
+                    )}
+                    {insightsPeriod === 'yearly' && (insight.Year || insight.Month || insight.Quarter) && (
+                      <span className="px-2 py-0.5 rounded bg-muted text-foreground border">Year: {insight.Year || (insight.Month ? String(insight.Month).slice(0,4) : '') || ''}</span>
+                    )}
+                    {insight.Product_Name && (
+                      <span className="px-2 py-0.5 rounded bg-muted text-foreground border">Product: {insight.Product_Name}</span>
+                    )}
                   </div>
                   <div className="text-sm">
-                    <MarkdownRenderer 
-                      content={insight.GPT_Bullet_Insight || insight.ai_insight || insight.insight || 'No insight available'} 
-                    />
+                    <MarkdownRenderer content={insight.Insight || 'No insight available'} />
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="text-muted-foreground">No insights available</div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Debug: Show insights data structure */}
       {insights.length === 0 && selectedMonth && (
@@ -334,21 +384,21 @@ const ForecastDemand = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="h-64 overflow-x-auto overflow-y-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-2">Period</th>
-                  <th className="text-left p-2">Total Demand</th>
-                  <th className="text-left p-2">Average Demand</th>
+                  <th className="text-left p-2">Date</th>
+                  <th className="text-left p-2">Product Name</th>
+                  <th className="text-left p-2">Forecasted Demand</th>
                 </tr>
               </thead>
               <tbody>
                 {forecastData.map((row, index) => (
                   <tr key={index} className="border-b hover:bg-muted/20">
-                    <td className="p-2">{row.period}</td>
-                    <td className="p-2">{row.total_demand.toLocaleString()}</td>
-                    <td className="p-2">{row.average_demand.toFixed(2)}</td>
+                    <td className="p-2">{row.Date}</td>
+                    <td className="p-2">{row.PRODUCT_NAME}</td>
+                    <td className="p-2">{row.Forecasted_Demand.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

@@ -37,7 +37,7 @@ const Scheduling = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 
   // WebSocket connection for real-time scheduling data
-  const wsUrl = `ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=10`;
+  const wsUrl = `ws://192.168.10.165:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=4`;
   
   const { readyState, lastMessage } = useWebSocket({
     url: wsUrl,
@@ -50,27 +50,51 @@ const Scheduling = () => {
           return updated;
         });
         
-        // Update Gantt tasks with real-time data
-        if (data.production_schedule && data.production_schedule.length > 0) {
-          const newTasks = data.production_schedule.map((item, idx) => ({
-            id: `realtime_${data.date}_${idx}`,
-            name: `${item.Product_Name || 'Unknown Product'} - ${data.date}`,
-            start: data.ts,
-            end: new Date(new Date(data.ts).getTime() + 15 * 60000).toISOString(), // 15 minutes duration
-            progress: 0,
-            raw: {
-              ...item,
-              Date: data.date,
-              Time: new Date(data.ts).toLocaleTimeString(),
-              Scheduled_Date: data.date,
-              Station: item.Station_Name || 'Unknown Station',
-              Operator: item.Operator_Name || 'Unknown Operator',
-              Product_Name: item.Product_Name || 'Unknown Product',
-              Unit: data.total_qty_scheduled
-            }
-          }));
-          
-          setGanttTasks(prev => [...prev, ...newTasks].slice(-100)); // Keep last 100 tasks
+        // Process station schedules for Gantt chart
+        const processShift = (shiftData: any[], shiftName: string) => {
+          if (!shiftData || shiftData.length === 0) {
+            return [];
+          }
+          return shiftData.map((item, idx) => {
+            const startTime = new Date(item.Event_Datetime);
+            // Assuming a fixed 15-minute duration for each task as end time is not provided.
+            const endTime = new Date(startTime.getTime() + 15 * 60000);
+
+            const taskId = `task_${item.PO_Number || data.date}_${item.Station}_${item.Time}_${shiftName}_${idx}`;
+
+            return {
+              id: taskId,
+              name: item.Product_Name || 'Unknown',
+              start: startTime.toISOString(),
+              end: endTime.toISOString(),
+              progress: 0,
+              raw: {
+                ...item,
+                Date: data.date,
+                Time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                Scheduled_Date: item.Scheduled_Date,
+                Station: item.Station,
+                Operator: item.Operator,
+                Product_Name: item.Product_Name,
+                Unit: item.Unit,
+                Shift: item.Shift,
+              }
+            };
+          });
+        };
+
+        const shiftA_tasks = processShift(data.station_schedule_shift_a, 'A');
+        const shiftB_tasks = processShift(data.station_schedule_shift_b, 'B');
+        const newTasks = [...shiftA_tasks, ...shiftB_tasks];
+
+        if (newTasks.length > 0) {
+          // Update Gantt tasks, ensuring no duplicates by task ID
+          setGanttTasks(prev => {
+            const existingIds = new Set(prev.map(task => task.id));
+            const uniqueNewTasks = newTasks.filter(task => !existingIds.has(task.id));
+            // Keep a reasonable number of tasks to avoid performance issues
+            return [...prev, ...uniqueNewTasks].slice(-500);
+          });
         }
       }
     },
@@ -110,43 +134,29 @@ const Scheduling = () => {
     }
   }, [readyState]);
   
-  // Build day-wise Gantt chart data from real-time and CSV tasks
+  // Build day-wise Gantt chart data from the processed tasks
   const dayWiseGanttData = useMemo(() => {
     const allTasks = [...ganttTasks];
-    console.log('Processing all tasks (including real-time):', allTasks);
-    
     if (!allTasks.length) return { timeSlots: [], stationData: [], realtimeData: realtimeScheduleData };
-    
-    // Extract unique time slots and sort them
-    const timeSlots = [...new Set(allTasks.map(task => task.raw?.Time))].filter(Boolean).sort();
-    console.log('Time slots found:', timeSlots);
-    
-    // Get unique stations
-    const stations = [...new Set(allTasks.map(task => task.raw?.Station))].filter(Boolean);
-    console.log('Stations found:', stations);
-    
-    // Create station data with time slot activity
+
+    // Define time slots from 8 AM to 8 PM (20:00)
+    const timeSlots = Array.from({ length: 13 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
+
+    const stations = [...new Set(allTasks.map(task => task.raw?.Station))].filter(Boolean).sort();
+
     const stationData = stations.map(station => {
       const stationTasks = allTasks.filter(task => task.raw?.Station === station);
-      const timeActivity = timeSlots.map(time => {
-        const taskAtTime = stationTasks.find(task => task.raw?.Time === time);
-        return taskAtTime ? {
-          active: true,
-          operator: taskAtTime.raw?.Operator,
-          product: taskAtTime.raw?.Product_Name,
-          unit: taskAtTime.raw?.Unit,
-          isRealtime: taskAtTime.id?.startsWith('realtime_')
-        } : { active: false, isRealtime: false };
-      });
-      
       return {
         station,
-        timeActivity
+        tasks: stationTasks,
       };
     });
-    
-    console.log('Final dayWiseGanttData:', { timeSlots, stationData, realtimeCount: realtimeScheduleData.length });
-    return { timeSlots, stationData, realtimeData: realtimeScheduleData };
+
+    return {
+      timeSlots,
+      stationData,
+      realtimeData: realtimeScheduleData
+    };
   }, [ganttTasks, realtimeScheduleData]);
 
   const fetchSchedulingData = async () => {
@@ -224,7 +234,7 @@ const Scheduling = () => {
   useEffect(() => {
     fetchSchedulingData();
     // Initial static Gantt data fetch (for legacy CSV data if available)
-    fetch('http://localhost:5000/api/schedule/gantt')
+    fetch('')
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -240,6 +250,19 @@ const Scheduling = () => {
         setGanttTasks([]);
       });
   }, []);
+
+  const getTaskCardColor = (productName: string) => {
+    if (productName.includes('Blue Pump')) {
+      return 'bg-blue-100 border-blue-500';
+    }
+    if (productName.includes('Green Pump')) {
+      return 'bg-green-100 border-green-500';
+    }
+    if (productName.includes('Orange Pump')) {
+      return 'bg-orange-100 border-orange-500';
+    }
+    return 'bg-gray-100 border-gray-500';
+  };
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
@@ -470,132 +493,158 @@ const Scheduling = () => {
         </Card>
       </div>
 
-      {/* Data Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Schedule Gantt Chart */}
+      {/* Production Schedule Gantt Chart */}
+      <div className="col-span-2">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-            <CardTitle className="flex items-center justify-between">
-              <span>Real-time Production Schedule</span>
-              {realtimeScheduleData.length > 0 && (
-                <span className="text-sm bg-white/20 px-2 py-1 rounded-full">
-                  Live: {realtimeScheduleData.length} updates
-                </span>
-              )}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Production Schedule</CardTitle>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center text-sm">
+                  <div className="w-3 h-3 rounded-full bg-green-300 border border-green-500 mr-1"></div>
+                  <span className="mr-3">Live</span>
+                </div>
+                {realtimeScheduleData.length > 0 && (
+                  <span className="text-sm bg-white/20 px-2 py-1 rounded-full">
+                    Updates: {realtimeScheduleData.length}
+                  </span>
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="p-4">
-            <div className="overflow-x-auto">
-              {dayWiseGanttData.timeSlots.length > 0 ? (
-                <table className="w-full text-sm border">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="p-2 text-left">Station</th>
-                      {dayWiseGanttData.timeSlots.map((time, idx) => (
-                        <th key={idx} className="p-2 text-center">{time}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dayWiseGanttData.stationData.map((station, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2 font-medium">{station.station}</td>
-                        {station.timeActivity.map((activity, timeIdx) => (
-                          <td key={timeIdx} className="p-1">
-                            {activity.active ? (
-                              <div className={`p-1 rounded text-xs ${
-                                activity.isRealtime 
-                                  ? 'bg-gradient-to-r from-green-200 to-green-300 border-2 border-green-400 animate-pulse' 
-                                  : 'bg-blue-200 border border-blue-300'
-                              }`}>
-                                <div className="font-medium">{activity.operator}</div>
-                                <div className="text-gray-600">{activity.product}</div>
-                                <div className="text-gray-500">Unit: {activity.unit}</div>
-                                {activity.isRealtime && (
-                                  <div className="text-green-700 text-xs font-bold">LIVE</div>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="h-8"></div>
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <CardContent className="p-0">
+            <div className="overflow-auto max-h-[600px] bg-white dark:bg-gray-900">
+              {dayWiseGanttData.stationData.length > 0 ? (
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {/* Header */}
+                  <div className="flex items-center bg-gray-50 dark:bg-gray-800 font-semibold text-sm">
+                    <div className="w-40 sticky left-0 pl-4 py-2 bg-gray-50 dark:bg-gray-800">Station</div>
+                    <div className="flex-1 pl-4 py-2">Scheduled Tasks</div>
+                  </div>
+
+                  {/* Station Rows */}
+                  {dayWiseGanttData.stationData.map((station, sIdx) => (
+                    <div key={sIdx} className="flex items-center">
+                      <div className="w-40 sticky left-0 pl-4 py-2 text-sm font-medium bg-white dark:bg-gray-900 self-stretch flex items-center border-r">{station.station}</div>
+                      <div className="flex-1 overflow-x-auto py-2">
+                        <div className="flex space-x-2 px-2">
+                          {station.tasks.map((task, taskIdx) => (
+                            <div
+                              key={task.id}
+                              className={`group w-48 flex-shrink-0 rounded-lg p-2 shadow-md border-l-4 relative ${getTaskCardColor(task.name)}`}
+                            >
+                              <div className="font-semibold truncate text-sm">{task.name}</div>
+                              <div className="text-gray-800 text-xs truncate">{task.raw.PO_Number || 'No PO'}</div>
+                              <div className="text-gray-600 text-xs truncate">{task.raw.Operator}</div>
+                              <div className="mt-2 text-right font-bold text-lg">{task.raw.Unit} <span className="font-normal text-xs">units</span></div>
+                              <div className="text-gray-500 text-xs text-left absolute bottom-2">{new Date(task.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div className="text-muted-foreground text-center py-8">
-                  {connectionStatus === 'Connected' ? 'Waiting for real-time data...' : 'No schedule data available - check WebSocket connection'}
+                <div className="text-muted-foreground text-center py-12">
+                  {connectionStatus === 'Connected' 
+                    ? 'Waiting for production schedule data...' 
+                    : 'No schedule data available - check WebSocket connection'}
                 </div>
               )}
             </div>
             
             {/* Real-time Data Summary */}
             {realtimeScheduleData.length > 0 && (
-              <div className="mt-6 p-4 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border border-green-200">
-                <h4 className="font-semibold mb-2 text-green-800">Latest Real-time Data</h4>
-                <div className="text-sm space-y-2">
+              <div className="p-4 border-t bg-gray-50 dark:bg-gray-800/50 text-sm">
+                <h4 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Latest Production Update</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {realtimeScheduleData.slice(-3).map((data, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border-l-4 border-green-400">
-                      <div>
-                        <span className="font-medium">Date: {data.date}</span>
-                        <span className="ml-4 text-gray-600">
-                          Total Scheduled: {data.total_qty_scheduled}
-                        </span>
+                    <div key={idx} className="bg-white dark:bg-gray-700 rounded-lg p-3 shadow">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">{data.date}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(data.ts).toLocaleTimeString()}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Scheduled</div>
+                          <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                            {data.total_qty_scheduled?.toLocaleString() || '0'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(data.ts).toLocaleTimeString()}
+                      
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-center">
+                          <div className="text-gray-500 dark:text-gray-400">Blue Pumps</div>
+                          <div className="font-medium">{data.forecasted_demand?.blue_pump || 0}</div>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-center">
+                          <div className="text-gray-500 dark:text-gray-400">Green Pumps</div>
+                          <div className="font-medium">{data.forecasted_demand?.green_pump || 0}</div>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded text-center">
+                          <div className="text-gray-500 dark:text-gray-400">Orange Pumps</div>
+                          <div className="font-medium">{data.forecasted_demand?.orange_pump || 0}</div>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            
-            {/* Table for all tasks, including those not shown in Gantt */}
-            <div className="mt-6">
-              <h4 className="font-semibold mb-2">All Schedule Tasks</h4>
-              <div className="overflow-x-auto max-h-96">
-                <table className="w-full text-sm border">
-                  <thead className="sticky top-0 bg-gray-50">
-                    <tr className="border-b">
-                      <th className="p-2">Type</th>
-                      <th className="p-2">Station</th>
-                      <th className="p-2">Operator</th>
-                      <th className="p-2">Product</th>
-                      <th className="p-2">Scheduled Date</th>
-                      <th className="p-2">Time</th>
-                      <th className="p-2">Status</th>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Additional Data Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>All Schedule Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full text-sm border">
+                <thead className="sticky top-0 bg-gray-50">
+                  <tr className="border-b">
+                    <th className="p-2">Type</th>
+                    <th className="p-2">Station</th>
+                    <th className="p-2">Operator</th>
+                    <th className="p-2">Product</th>
+                    <th className="p-2">Scheduled Date</th>
+                    <th className="p-2">Time</th>
+                    <th className="p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ganttTasks.map((task, idx) => (
+                    <tr key={task.id || idx} className={`border-b ${task.id?.startsWith('realtime_') ? 'bg-green-50' : ''}`}>
+                      <td className="p-2">
+                        {task.id?.startsWith('realtime_') ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">LIVE</span>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">STATIC</span>
+                        )}
+                      </td>
+                      <td className="p-2">{task.raw?.Station || '-'}</td>
+                      <td className="p-2">{task.raw?.Operator || '-'}</td>
+                      <td className="p-2">{task.raw?.Product_Name || '-'}</td>
+                      <td className="p-2">{task.raw?.Scheduled_Date || '-'}</td>
+                      <td className="p-2">{task.raw?.Time || '-'}</td>
+                      <td className="p-2">
+                        {task.start && task.end ? (
+                          <span className="text-green-700">Scheduled</span>
+                        ) : (
+                          <span className="text-red-700">Missing Time</span>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {ganttTasks.map((task, idx) => (
-                      <tr key={task.id || idx} className={`border-b ${task.id?.startsWith('realtime_') ? 'bg-green-50' : ''}`}>
-                        <td className="p-2">
-                          {task.id?.startsWith('realtime_') ? (
-                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">LIVE</span>
-                          ) : (
-                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">STATIC</span>
-                          )}
-                        </td>
-                        <td className="p-2">{task.raw?.Station || '-'}</td>
-                        <td className="p-2">{task.raw?.Operator || '-'}</td>
-                        <td className="p-2">{task.raw?.Product_Name || '-'}</td>
-                        <td className="p-2">{task.raw?.Scheduled_Date || '-'}</td>
-                        <td className="p-2">{task.raw?.Time || '-'}</td>
-                        <td className="p-2">
-                          {task.start && task.end ? (
-                            <span className="text-green-700">Shown in Gantt</span>
-                          ) : (
-                            <span className="text-red-700">Missing/Invalid Date or Time</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>

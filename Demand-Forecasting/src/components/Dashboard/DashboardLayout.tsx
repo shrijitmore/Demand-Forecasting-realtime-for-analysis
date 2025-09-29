@@ -57,7 +57,7 @@ const DashboardLayout = ({ className = "" }: DashboardLayoutProps) => {
           className="w-full"
         >
           <div className="border-b px-4">
-            <TabsList className="bg-transparent h-12 w-full justify-start gap-4 overflow-x-auto">
+            <TabsList className="bg-transparent h-12 w-full justify-start gap-2 overflow-x-auto flex-wrap">
               <TabsTrigger
                 value="historical-sales"
                 className="data-[state=active]:bg-muted"
@@ -88,24 +88,33 @@ const DashboardLayout = ({ className = "" }: DashboardLayoutProps) => {
               >
                 Supplier Performance
               </TabsTrigger>
+              <TabsTrigger
+                value="list-analysis"
+                className="data-[state=active]:bg-muted"
+              >
+                Risk Analysis
+              </TabsTrigger>
             </TabsList>
           </div>
 
           <div className="p-4 md:p-6">
             <TabsContent value="historical-sales" className="mt-0">
-              <TabContent tabId="historical-sales" />
+              <TabContent activeTab={activeTab} tabId="historical-sales" />
             </TabsContent>
             <TabsContent value="forecast-demand" className="mt-0">
-              <TabContent tabId="forecast-demand" />
+              <TabContent activeTab={activeTab} tabId="forecast-demand" />
             </TabsContent>
             <TabsContent value="inventory-procurement" className="mt-0">
-              <TabContent tabId="inventory-procurement" />
+              <TabContent activeTab={activeTab} tabId="inventory-procurement" />
             </TabsContent>
             <TabsContent value="scheduling" className="mt-0">
-              <TabContent tabId="scheduling" />
+              <TabContent activeTab={activeTab} tabId="scheduling" />
             </TabsContent>
             <TabsContent value="supplier-performance" className="mt-0">
-              <TabContent tabId="supplier-performance" />
+              <TabContent activeTab={activeTab} tabId="supplier-performance" />
+            </TabsContent>
+            <TabsContent value="list-analysis" className="mt-0">
+              <TabContent activeTab={activeTab} tabId="list-analysis" />
             </TabsContent>
           </div>
         </Tabs>

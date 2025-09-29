@@ -37,22 +37,11 @@ const SupplierPerformance = () => {
 
   const fetchAvailableSkus = async () => {
     try {
-      console.log('Fetching available SKUs...');
-      const response = await fetch('http://localhost:3000/api/supplier-insights/skus');
-      console.log('SKU response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('SKU error response:', errorData);
-        setAvailableSkus([]);
-        return;
-      }
-      
-      const skus = await response.json();
-      console.log('Available SKUs:', skus);
-      setAvailableSkus(skus);
-      if (skus.length > 0 && !selectedSku) {
-        setSelectedSku(skus[0]);
+      const skus = await apiCall(() => api.getSupplierSKUsList());
+      const list = skus || [];
+      setAvailableSkus(list);
+      if (list.length > 0 && !selectedSku) {
+        setSelectedSku(list[0]);
       }
     } catch (error) {
       console.error('Error fetching available SKUs:', error);
@@ -62,22 +51,16 @@ const SupplierPerformance = () => {
 
   const fetchInsightForSku = async (sku: string) => {
     if (!sku) return;
-    
     try {
-      console.log('Fetching insight for SKU:', sku);
-      const response = await fetch(`http://localhost:3000/api/suppliers/insight/${sku}`);
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        setSupplierInsights([]);
-        return;
-      }
-      
-      const insight = await response.json();
-      console.log('Insight received:', insight);
-      setSupplierInsights([insight]);
+      const data = await apiCall(() => api.getSupplierAIInsights(sku));
+      const arr = Array.isArray(data) ? data : (data ? [data] : []);
+      // Normalize keys expected by UI
+      const normalized = arr.map((it: any) => ({
+        sku_id: it.SKU_No || it.SKU_ID || it.sku_id || sku,
+        supplier_name: it.Supplier_Name || it.supplier_name,
+        insight: it.AI_Supplier_Insight || it.Insight || it.insight || it.ai_insight || '',
+      }));
+      setSupplierInsights(normalized);
     } catch (error) {
       console.error('Error fetching insight for SKU:', error);
       setSupplierInsights([]);
@@ -103,23 +86,25 @@ const SupplierPerformance = () => {
       console.error('Error fetching supplier data:', error);
     }
     
-    // Fetch alternate suppliers from backend CSV endpoint
+    // Fetch alternate suppliers via backend SQL endpoint
     try {
-      const response = await fetch('http://localhost:3000/api/alternate-suppliers');
-      if (!response.ok) throw new Error('Failed to fetch alternate suppliers');
-      const alternateData = await response.json();
-      // Map backend CSV fields to camelCase for frontend use
-      const mapped = alternateData.map((item: any) => ({
-        supplier_name: item.Supplier_Name,
-        sku_id: item.SKU_ID,
-        otd_percentage: parseFloat(item.OTD_Percentage || 0),
-        quality_score: parseFloat(item.Quality_Score || 0),
-        email: item.Email,
-        location: item.Location,
-        avg_lead_time_days: parseFloat(item.Avg_Lead_Time_Days || 0),
-        fulfillment_rate: parseFloat(item.Fulfillment_Rate || 0)
-      }));
-      setAlternateSuppliers(mapped);
+      if (!selectedSku) {
+        setAlternateSuppliers([]);
+      } else {
+        const alt = await apiCall(() => api.getAlternateSuppliersBySKU(selectedSku));
+        const list = Array.isArray(alt) ? alt : (alt ? [alt] : []);
+        const mapped = list.map((item: any) => ({
+          supplier_name: item.Supplier_Name || item.supplier_name,
+          sku_id: item.SKU_No || item.SKU_ID || item.sku_id || selectedSku,
+          otd_percentage: Math.round(parseFloat(item.OTD_Percentage || item.OTD || item.otd_percentage || 0)),
+          quality_score: Math.round(parseFloat(item.Quality_Score || item.quality_score || 0)),
+          email: item.Email || item.email,
+          location: item.Location || item.location,
+          avg_lead_time_days: Math.round(parseFloat(item.Avg_Lead_Time_Days || item.Lead_Time_Days || item.avg_lead_time_days || 0)),
+          fulfillment_rate: Math.round(parseFloat(item.Fulfillment_Rate || item.fulfillment_rate || 0)),
+        }));
+        setAlternateSuppliers(mapped);
+      }
     } catch (error) {
       console.error('Error fetching alternate suppliers:', error);
       setAlternateSuppliers([]);
@@ -174,6 +159,35 @@ const SupplierPerformance = () => {
     if (selectedSku) {
       fetchInsightForSku(selectedSku);
     }
+  }, [selectedSku]);
+
+  // Refresh alternate suppliers when SKU changes
+  useEffect(() => {
+    const loadAlternate = async () => {
+      try {
+        if (!selectedSku) {
+          setAlternateSuppliers([]);
+          return;
+        }
+        const alt = await apiCall(() => api.getAlternateSuppliersBySKU(selectedSku));
+        const list = Array.isArray(alt) ? alt : (alt ? [alt] : []);
+        const mapped = list.map((item: any) => ({
+          supplier_name: item.Supplier_Name || item.supplier_name,
+          sku_id: item.SKU_No || item.SKU_ID || item.sku_id || selectedSku,
+          otd_percentage: Math.round(parseFloat(item.OTD_Percentage || item.OTD || item.otd_percentage || 0)),
+          quality_score: Math.round(parseFloat(item.Quality_Score || item.quality_score || 0)),
+          email: item.Email || item.email,
+          location: item.Location || item.location,
+          avg_lead_time_days: Math.round(parseFloat(item.Avg_Lead_Time_Days || item.Lead_Time_Days || item.avg_lead_time_days || 0)),
+          fulfillment_rate: Math.round(parseFloat(item.Fulfillment_Rate || item.fulfillment_rate || 0)),
+        }));
+        setAlternateSuppliers(mapped);
+      } catch (error) {
+        console.error('Error fetching alternate suppliers:', error);
+        setAlternateSuppliers([]);
+      }
+    };
+    loadAlternate();
   }, [selectedSku]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -343,6 +357,7 @@ const SupplierPerformance = () => {
                       cy="50%"
                       labelLine={false}
                       label={({ name, value }) => `${name}: ${value}`}
+                      innerRadius={50}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -481,11 +496,11 @@ const SupplierPerformance = () => {
               </thead>
               <tbody>
                 {supplierKPIs && [
-                  { metric: 'Lead Time', value: `${supplierKPIs.lead_time_days} days`, status: supplierKPIs.lead_time_days <= 7 ? 'Good' : 'Needs Attention' },
-                  { metric: 'Fulfillment Rate', value: `${supplierKPIs.fulfillment_rate_percent}%`, status: supplierKPIs.fulfillment_rate_percent >= 95 ? 'Good' : 'Needs Attention' },
-                  { metric: 'On-Time Delivery', value: `${supplierKPIs.otd_percent}%`, status: supplierKPIs.otd_percent >= 90 ? 'Good' : 'Needs Attention' },
-                  { metric: 'Late Deliveries', value: supplierKPIs.late_deliveries.toString(), status: supplierKPIs.late_deliveries <= 5 ? 'Good' : 'Needs Attention' },
-                  { metric: 'Total Orders', value: supplierKPIs.total_orders.toString(), status: 'Info' }
+                  { metric: 'Lead Time', value: `${supplierKPIs?.lead_time_days ?? 0} days`, status: (supplierKPIs?.lead_time_days ?? 0) <= 7 ? 'Good' : 'Needs Attention' },
+                  { metric: 'Fulfillment Rate', value: `${supplierKPIs?.fulfillment_rate_percent ?? 0}%`, status: (supplierKPIs?.fulfillment_rate_percent ?? 0) >= 95 ? 'Good' : 'Needs Attention' },
+                  { metric: 'On-Time Delivery', value: `${supplierKPIs?.otd_percent ?? 0}%`, status: (supplierKPIs?.otd_percent ?? 0) >= 90 ? 'Good' : 'Needs Attention' },
+                  { metric: 'Late Deliveries', value: (supplierKPIs?.late_deliveries ?? 0).toString(), status: (supplierKPIs?.late_deliveries ?? 0) <= 5 ? 'Good' : 'Needs Attention' },
+                  { metric: 'Total Orders', value: (supplierKPIs?.total_orders ?? 0).toString(), status: 'Info' }
                 ].map((row, index) => (
                   <tr key={index} className="border-b hover:bg-muted/20">
                     <td className="p-2">{row.metric}</td>

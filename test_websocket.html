@@ -59,7 +59,7 @@
                 ws.close();
             }
             
-            const wsUrl = 'ws://localhost:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-05&interval=3';
+            const wsUrl = 'ws://192.168.10.165:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-05&interval=3';
             ws = new WebSocket(wsUrl);
             
             ws.onopen = function(event) {

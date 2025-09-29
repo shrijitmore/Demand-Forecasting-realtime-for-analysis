@@ -4,6 +4,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw } from "lucide-react";
+import ListAnalysis from "@/pages/ListAnalysis";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import { MarkdownRenderer } from "@/utils/markdownToHtml.tsx";
 
 interface TabContentProps {
   activeTab: string;
+  tabId: string;
   isLoading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
@@ -22,6 +24,7 @@ interface TabContentProps {
 
 const TabContent: React.FC<TabContentProps> = ({
   activeTab = "historical-sales",
+  tabId,
   isLoading = false,
   error = null,
   onRefresh = () => {},
@@ -454,6 +457,11 @@ const TabContent: React.FC<TabContentProps> = ({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* List Analysis Tab Content */}
+        <TabsContent value="list-analysis" className="w-full">
+          <ListAnalysis />
         </TabsContent>
       </Tabs>
     </div>

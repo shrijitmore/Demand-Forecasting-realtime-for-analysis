@@ -18,28 +18,77 @@ const InventoryProcurement = () => {
     setLoading(true);
     
     try {
-      // First, let's debug the field names
-      try {
-        const debugResponse = await fetch('http://localhost:3000/api/debug/fields');
-        const debugData = await debugResponse.json();
-        console.log('Debug field data:', debugData);
-      } catch (debugError) {
-        console.log('Debug endpoint not available:', debugError);
-      }
-      
-      const [kpis, stock, alert, reorder, lead, supplier, procurement] = await Promise.allSettled([
-        apiCall(() => api.getInventoryKPIs()),
+      const [stock, alert, reorder, lead, supplier, productionOrders, procurement] = await Promise.allSettled([
         apiCall(() => api.getInventoryData('stock_levels')),
         apiCall(() => api.getInventoryData('alerts')),
         apiCall(() => api.getReorderChart()),
         apiCall(() => api.getLeadTimes()),
         apiCall(() => api.getSupplierAlerts()),
+        apiCall(() => api.getInventoryData('production_orders')),
         apiCall(() => api.getProcurementInsights())
       ]);
 
-      setInventoryKPIs(kpis.status === 'fulfilled' ? kpis.value : null);
-      setStockLevels(stock.status === 'fulfilled' ? (stock.value || []) : []);
-      setAlerts(alert.status === 'fulfilled' ? (alert.value || []) : []);
+      const stockRows = stock.status === 'fulfilled' ? (stock.value || []) : [];
+      const alertRows = alert.status === 'fulfilled' ? (alert.value || []) : [];
+      setStockLevels(stockRows);
+      setAlerts(alertRows);
+
+      // Compute KPIs locally from stock and alerts
+      const uniqueSKU = new Set<string>();
+      let totalSOH = 0;
+      let totalTransit = 0;
+      let leadSum = 0;
+      let leadCount = 0;
+      stockRows.forEach((row: any) => {
+        const sku = row.SKU_No || row.SKU_ID || row.sku || row.SKU;
+        if (sku) uniqueSKU.add(String(sku));
+        totalSOH += parseFloat(row.Stock_On_Hand || row.Available || 0) || 0;
+        totalTransit += parseFloat(row.In_Transit || 0) || 0;
+        const lead = parseFloat(row.Lead_Time_Days || 0);
+        if (!isNaN(lead)) {
+          leadSum += lead;
+          leadCount += 1;
+        }
+      });
+      // Below reorder count: prefer alerts dataset if present
+      let belowReorder = 0;
+      if (alertRows.length > 0) {
+        alertRows.forEach((row: any) => {
+          // Use Available_Stock and Required_Qty if provided by backend alerts API
+          const availStock = row.Available_Stock;
+          const requiredQty = row.Required_Qty;
+          if (availStock != null && requiredQty != null) {
+            if (Number(availStock) < Number(requiredQty)) belowReorder += 1;
+          } else {
+            const avail = parseFloat(row.Available || 0) || 0;
+            const rp = parseFloat(row.Reorder_Point || 0) || 0;
+            if (rp && avail < rp) belowReorder += 1;
+          }
+        });
+      } else {
+        stockRows.forEach((row: any) => {
+          const avail = parseFloat(row.Available || row.Stock_On_Hand || 0) || 0;
+          const rp = parseFloat(row.Reorder_Point || 0) || 0;
+          if (rp && avail < rp) belowReorder += 1;
+        });
+      }
+      let scheduledQty = 0;
+      if (productionOrders.status === 'fulfilled' && Array.isArray(productionOrders.value)) {
+        scheduledQty = productionOrders.value.reduce((sum: number, row: any) => {
+          const qty = parseFloat(row.Scheduled_Qty || row.Quantity || row.Qty || 0);
+          return sum + (isNaN(qty) ? 0 : qty);
+        }, 0);
+      }
+
+      const computedKPIs: InventoryKPIs = {
+        total_skus: uniqueSKU.size,
+        total_stock_on_hand: Math.round(totalSOH),
+        in_transit: Math.round(totalTransit),
+        below_reorder_point: belowReorder,
+        avg_lead_time: leadCount ? +(leadSum / leadCount).toFixed(1) : 0,
+        scheduled_qty: Math.round(scheduledQty),
+      };
+      setInventoryKPIs(computedKPIs);
       
       // Handle reorder chart data with fallback
       let reorderData = reorder.status === 'fulfilled' ? (reorder.value || []) : [];
@@ -47,8 +96,8 @@ const InventoryProcurement = () => {
         // Fallback: generate reorder chart from alerts data
         reorderData = alert.value.map((item: any, index: number) => ({
           SKU_No: item.SKU_No || item['SKU_No'] || `SKU${index + 1}`,
-          Available: parseInt(item.Available || 0),
-          Reorder_Point: parseInt(item.Reorder_Point || 0)
+          Available: parseInt(item.Available_Stock ?? item.Available ?? 0),
+          Reorder_Point: parseInt(item.Reorder_Point ?? item.Required_Qty ?? 0),
         }));
       }
       // Filter out items with undefined SKU_No
@@ -72,9 +121,9 @@ const InventoryProcurement = () => {
       
       // Debug logging
       console.log('Inventory Data Loaded:', {
-        kpis: kpis.status === 'fulfilled' ? kpis.value : null,
-        stockLevels: stock.status === 'fulfilled' ? stock.value?.length : 0,
-        alerts: alert.status === 'fulfilled' ? alert.value?.length : 0,
+        kpis: computedKPIs,
+        stockLevels: stockRows.length,
+        alerts: alertRows.length,
         reorderChart: reorderData.length,
         leadTimes: leadData.length,
         supplierAlerts: supplier.status === 'fulfilled' ? supplier.value?.length : 0,
@@ -313,7 +362,7 @@ const InventoryProcurement = () => {
             <CardTitle>Stock Levels (Top 10)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="h-64 overflow-x-auto overflow-y-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
@@ -324,7 +373,7 @@ const InventoryProcurement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {stockLevels.slice(0, 10).map((item, index) => (
+                  {stockLevels.map((item, index) => (
                     <tr key={index} className="border-b hover:bg-muted/20">
                       <td className="p-2">{item.SKU_No}</td>
                       <td className="p-2">{parseInt(item.Stock_On_Hand || 0).toLocaleString()}</td>
@@ -344,23 +393,27 @@ const InventoryProcurement = () => {
             <CardTitle>Inventory Alerts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="h-64 overflow-x-auto overflow-y-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">SKU</th>
-                    <th className="text-left p-2">Available</th>
-                    <th className="text-left p-2">Reorder Point</th>
-                    <th className="text-left p-2">Supplier</th>
+                    <th className="text-left p-2">Available Stock</th>
+                    <th className="text-left p-2">Required Qty</th>
+                    <th className="text-left p-2">Action</th>
+                    <th className="text-left p-2">Date</th>
+                    <th className="text-left p-2">Product ID</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {alerts.slice(0, 10).map((item, index) => (
+                  {alerts.map((item, index) => (
                     <tr key={index} className="border-b hover:bg-muted/20">
                       <td className="p-2">{item.SKU_No}</td>
-                      <td className="p-2">{parseInt(item.Available || 0).toLocaleString()}</td>
-                      <td className="p-2">{parseInt(item.Reorder_Point || 0).toLocaleString()}</td>
-                      <td className="p-2">{item.Supplier}</td>
+                      <td className="p-2">{parseInt(item.Available_Stock ?? item.Available ?? 0).toLocaleString()}</td>
+                      <td className="p-2">{parseInt(item.Required_Qty ?? item.Reorder_Point ?? 0).toLocaleString()}</td>
+                      <td className="p-2">{item.Action || '-'}</td>
+                      <td className="p-2">{item.Date ? new Date(item.Date).toLocaleDateString() : '-'}</td>
+                      <td className="p-2">{item.Product_ID || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
