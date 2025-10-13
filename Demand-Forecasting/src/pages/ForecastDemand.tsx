@@ -172,6 +172,126 @@ const ForecastDemand = () => {
 
   const selectedProductName = products.find(p => p.PRODUCT_CARD_ID === selectedProduct)?.PRODUCT_NAME || "";
 
+  // Function to format dates based on frequency
+  const formatDateForDisplay = (date: string, frequency: string) => {
+    if (!date) return date;
+    
+    try {
+      const dateObj = new Date(date);
+      
+      switch (frequency) {
+        case "monthly":
+          // Format as Jan '24, Feb '24, etc. to avoid repeating months across years
+          const month = dateObj.toLocaleString('default', { month: 'short' });
+          const year = dateObj.getFullYear().toString().slice(-2);
+          return `${month} '${year}`;
+        case "daily":
+          // Format as d1, d2, d3, etc.
+          const day = dateObj.getDate();
+          return `d${day}`;
+        case "weekly":
+          // Format as W1, W2, W3, etc.
+          const week = Math.ceil((dateObj.getDate() + new Date(dateObj.getFullYear(), dateObj.getMonth(), 1).getDay()) / 7);
+          return `W${week}`;
+        default:
+          return date;
+      }
+    } catch (error) {
+      return date;
+    }
+  };
+
+  // Prepare data with formatted dates for chart
+  const chartData = React.useMemo(() => {
+    // For monthly frequency, aggregate data by month to show only one point per month
+    if (selectedFrequency === 'monthly') {
+      const monthlyMap = new Map();
+      
+      forecastData.forEach(item => {
+        const dateObj = new Date(item.Date);
+        const monthYearKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
+        
+        if (!monthlyMap.has(monthYearKey)) {
+          // Create new aggregated entry for this month
+          monthlyMap.set(monthYearKey, {
+            ...item,
+            FormattedDate: formatDateForDisplay(item.Date, selectedFrequency),
+            // Sum all demand values for this month
+            Forecasted_Demand: 0,
+            // Count of entries for this month
+            count: 0
+          });
+        }
+        
+        // Add to the sum and increment count
+        const monthEntry = monthlyMap.get(monthYearKey);
+        monthEntry.Forecasted_Demand += item.Forecasted_Demand;
+        monthEntry.count += 1;
+      });
+      
+      // Convert map to array and sort by date
+      return Array.from(monthlyMap.values()).sort((a, b) => {
+        const dateA = new Date(a.Date);
+        const dateB = new Date(b.Date);
+        return dateA.getTime() - dateB.getTime();
+      });
+    }
+    
+    // For weekly frequency, aggregate data by week to show only one point per week
+    if (selectedFrequency === 'weekly') {
+      const weeklyMap = new Map();
+      
+      forecastData.forEach(item => {
+        const dateObj = new Date(item.Date);
+        // Get week number and year for this date
+        const startOfYear = new Date(dateObj.getFullYear(), 0, 1);
+        const pastDaysOfYear = (dateObj.getTime() - startOfYear.getTime()) / 86400000;
+        const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+        const weekYearKey = `${dateObj.getFullYear()}-W${weekNumber}`;
+        
+        if (!weeklyMap.has(weekYearKey)) {
+          // Create new aggregated entry for this week
+          weeklyMap.set(weekYearKey, {
+            ...item,
+            FormattedDate: formatDateForDisplay(item.Date, selectedFrequency),
+            // Sum all demand values for this week
+            Forecasted_Demand: 0,
+            // Count of entries for this week
+            count: 0
+          });
+        }
+        
+        // Add to the sum and increment count
+        const weekEntry = weeklyMap.get(weekYearKey);
+        weekEntry.Forecasted_Demand += item.Forecasted_Demand;
+        weekEntry.count += 1;
+      });
+      
+      // Convert map to array and sort by date
+      return Array.from(weeklyMap.values()).sort((a, b) => {
+        const dateA = new Date(a.Date);
+        const dateB = new Date(b.Date);
+        return dateA.getTime() - dateB.getTime();
+      });
+    }
+    
+    // For daily frequency, sample every 3rd day to reduce chart points
+    if (selectedFrequency === 'daily') {
+      return forecastData
+        .filter((_, index) => index % 3 === 0) // Take every 3rd day
+        .map(item => ({
+          ...item,
+          FormattedDate: formatDateForDisplay(item.Date, selectedFrequency)
+        }));
+    }
+    
+    // For any other frequency, just format the dates
+    return forecastData.map(item => ({
+      ...item,
+      FormattedDate: formatDateForDisplay(item.Date, selectedFrequency)
+    }));
+  }, [forecastData, selectedFrequency]);
+
   return (
     <div className="w-full p-4 bg-background space-y-4">
       <div className="flex justify-between items-center mb-4">
@@ -267,6 +387,7 @@ const ForecastDemand = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{forecastData.length}</div>
+            <div className="text-xs text-muted-foreground">Chart points: {chartData.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -277,19 +398,68 @@ const ForecastDemand = () => {
           <CardTitle>Forecasted Demand - {selectedProductName}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-80 w-full">
+          <div className={`h-80 ${selectedFrequency === 'daily' ? 'overflow-x-auto' : 'w-full'}`}>
             {loading ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-muted-foreground">Loading forecast data...</div>
               </div>
-            ) : forecastData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={forecastData}>
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width={selectedFrequency === 'daily' ? '500%' : '100%'} height="100%">
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="Date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="Forecasted_Demand" stroke="#8884d8" strokeWidth={2} />
+                  <XAxis 
+                    dataKey="FormattedDate" 
+                    label={{ 
+                      value: selectedFrequency === 'monthly' ? 'Months' : 
+                              selectedFrequency === 'weekly' ? 'Weeks' : 'Days', 
+                      position: 'insideBottom', 
+                      offset: -5 
+                    }} 
+                  />
+                  <YAxis 
+                    label={{ 
+                      value: 'Unit', 
+                      angle: -90, 
+                      position: 'insideLeft' 
+                    }} 
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => [Math.round(value).toLocaleString(), 'Demand']}
+                    labelFormatter={(label) => {
+                      if (selectedFrequency === 'daily') {
+                        // Find the original date for this daily point
+                        const dataPoint = chartData.find(d => d.FormattedDate === label);
+                        if (dataPoint) {
+                          const dateObj = new Date(dataPoint.Date);
+                          return dateObj.toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          });
+                        }
+                      }
+                      return label;
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="Forecasted_Demand" 
+                    stroke="#8884d8" 
+                    strokeWidth={2}
+                    dot={{ 
+                      r: selectedFrequency === 'daily' ? 6 : 4, 
+                      fill: '#8884d8',
+                      strokeWidth: 2,
+                      stroke: '#fff'
+                    }}
+                    activeDot={{ 
+                      r: selectedFrequency === 'daily' ? 8 : 6, 
+                      fill: '#8884d8',
+                      strokeWidth: 2,
+                      stroke: '#fff'
+                    }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (

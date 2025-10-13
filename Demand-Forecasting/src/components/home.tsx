@@ -28,7 +28,7 @@ const Home = () => {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Unified SCM Dashboard
+            Supply Chain Control Tower
           </h1>
           <p className="text-muted-foreground">
             Comprehensive supply chain management analytics

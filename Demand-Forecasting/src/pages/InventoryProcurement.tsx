@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Package, AlertTriangle, Clock, Truck, TrendingUp } from "lucide-react";
 import { api, apiCall, InventoryKPIs } from "@/lib/api";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
 
 const InventoryProcurement = () => {
   const [inventoryKPIs, setInventoryKPIs] = useState<InventoryKPIs | null>(null);
@@ -273,15 +273,41 @@ const InventoryProcurement = () => {
           <CardContent>
             <div className="h-64 overflow-x-auto">
               {reorderChart.length > 0 ? (
-                <ResponsiveContainer width={reorderChart.length * 50} height="100%">
-                  <BarChart data={reorderChart}>
+                <ResponsiveContainer width={reorderChart.length * 50} height="100%" style={{ marginLeft: '20px' }}>
+                  <LineChart data={reorderChart}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="SKU_No" tick={{ fontSize: 10 }} tickCount={10} />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="SKU_No" 
+                      tick={{ fontSize: 10 }} 
+                      tickCount={10}
+                      label={{ value: 'SKU', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                      label={{ value: 'Quantity', angle: -90, position: 'insideLeft' }}
+                    />
                     <Tooltip />
-                    <Bar dataKey="Available" fill="#8884d8" barSize={20} />
-                    <Bar dataKey="Reorder_Point" fill="#82ca9d" barSize={20} />
-                  </BarChart>
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36}
+                      wrapperStyle={{ paddingBottom: '10px' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Available" 
+                      stroke="#8884d8" 
+                      strokeWidth={2} 
+                      name="Available Stock" 
+                      dot={{ r: 4 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Reorder_Point" 
+                      stroke="#82ca9d" 
+                      strokeWidth={2} 
+                      name="Reorder Point" 
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center">
@@ -333,7 +359,7 @@ const InventoryProcurement = () => {
             <div className="h-64 overflow-y-auto">
               {procurementInsights.length > 0 ? (
                 <div className="space-y-2">
-                  {procurementInsights.slice(0, 5).map((insight, index) => (
+                  {procurementInsights.map((insight, index) => (
                     <div key={index} className="p-3 bg-muted/20 rounded-lg">
                       <p className="text-sm font-medium">{insight.SKU_ID} - {insight.SKU_Name}</p>
                       <p className="text-xs text-muted-foreground mt-1">

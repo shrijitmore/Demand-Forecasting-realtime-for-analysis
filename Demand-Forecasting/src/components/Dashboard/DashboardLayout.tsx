@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const DashboardLayout = ({ className = "" }: DashboardLayoutProps) => {
   return (
     <div className={`min-h-screen bg-background p-4 md:p-6 ${className}`}>
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Unified SCM Dashboard</h1>
+        <h1 className="text-2xl font-bold">Supply Chain Control Tower</h1>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

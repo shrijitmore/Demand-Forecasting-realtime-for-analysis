@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://192.168.10.165:5000";
+const API_BASE_URL = "http://192.168.10.157:5000";
 
 // Types for API responses
 export interface ForecastData {
