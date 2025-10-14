@@ -276,27 +276,69 @@ const HistoricalSales = () => {
         {/* Monthly Sales Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Monthly Sales Trend</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Sales Trend</CardTitle>
+              <Select
+                value={salesTrendPeriod}
+                onValueChange={(value) => setSalesTrendPeriod(value as 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly')}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              {monthlySales && monthlySales.months && monthlySales.sales ? (
+              {salesTrendData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlySales.months.map((month: string, index: number) => ({
-                    month,
-                    sales: monthlySales.sales[index]
-                  }))}
-                  >
+                  <LineChart data={salesTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 11 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Blue Pump" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      name="Blue Pump"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Green Pump" 
+                      stroke="#22c55e" 
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      name="Green Pump"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="Orange Pump" 
+                      stroke="#f97316" 
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      name="Orange Pump"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-muted-foreground">Loading...</div>
+                  <div className="text-muted-foreground">Loading sales trend...</div>
                 </div>
               )}
             </div>
