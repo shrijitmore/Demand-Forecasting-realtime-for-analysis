@@ -23,6 +23,10 @@ const HistoricalSales = () => {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
+  
+  // New state for sales trend
+  const [salesTrendPeriod, setSalesTrendPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
 
   const fetchSalesData = async () => {
     setLoading(true);
