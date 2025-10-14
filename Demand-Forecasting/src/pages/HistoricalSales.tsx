@@ -178,7 +178,8 @@ const HistoricalSales = () => {
     }
 
     setLoading(false);
-  };
+    setDataLoaded(true);
+  }, [dataLoaded]);
 
   const handleRefresh = async () => {
     await fetchSalesData();
