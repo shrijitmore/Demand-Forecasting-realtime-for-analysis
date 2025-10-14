@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, IndianRupee, ShoppingCart, Truck, AlertTriangle, Clock, TrendingUp, TrendingDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, apiCall, SalesKPIs } from "@/lib/api";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
 import { MarkdownRenderer } from "@/utils/markdownToHtml.tsx";
 
 const HistoricalSales = () => {
@@ -16,6 +16,7 @@ const HistoricalSales = () => {
   const [regionSales, setRegionSales] = useState<any>(null);
   const [topProducts, setTopProducts] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [yearlyInsights, setYearlyInsights] = useState<any[]>([]);
   const [monthlyInsights, setMonthlyInsights] = useState<any[]>([]);
   const [quarterlyInsights, setQuarterlyInsights] = useState<any[]>([]);
@@ -27,6 +28,7 @@ const HistoricalSales = () => {
   // New state for sales trend
   const [salesTrendPeriod, setSalesTrendPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
+  const [salesTrendLoading, setSalesTrendLoading] = useState(false);
 
   // Fetch sales trend data from external API
   const fetchSalesTrendData = async (period: string) => {
