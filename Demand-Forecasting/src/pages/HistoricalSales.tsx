@@ -31,9 +31,12 @@ const HistoricalSales = () => {
   const [salesTrendLoading, setSalesTrendLoading] = useState(false);
 
   // Fetch sales trend data from external API
-  const fetchSalesTrendData = async (period: string) => {
+  const fetchSalesTrendData = useCallback(async (period: string) => {
+    setSalesTrendLoading(true);
     try {
-      const response = await fetch(`http://192.168.10.157:5000/api/${period}`);
+      const response = await fetch(`http://192.168.10.157:5000/api/${period}`, {
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
       const data = await response.json();
       
       // Transform data for chart
@@ -55,10 +58,14 @@ const HistoricalSales = () => {
     } catch (error) {
       console.error('Error fetching sales trend data:', error);
       setSalesTrendData([]);
+    } finally {
+      setSalesTrendLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSalesData = async () => {
+  const fetchSalesData = useCallback(async () => {
+    if (dataLoaded) return; // Prevent refetching if data is already loaded
+    
     setLoading(true);
 
     try {
