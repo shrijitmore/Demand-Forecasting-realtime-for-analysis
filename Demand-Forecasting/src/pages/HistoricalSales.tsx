@@ -28,6 +28,34 @@ const HistoricalSales = () => {
   const [salesTrendPeriod, setSalesTrendPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
 
+  // Fetch sales trend data from external API
+  const fetchSalesTrendData = async (period: string) => {
+    try {
+      const response = await fetch(`http://192.168.10.157:5000/api/${period}`);
+      const data = await response.json();
+      
+      // Transform data for chart
+      const groupedData: { [key: string]: { [product: string]: number } } = {};
+      
+      data.forEach((item: any) => {
+        if (!groupedData[item.Date]) {
+          groupedData[item.Date] = {};
+        }
+        groupedData[item.Date][item.Product] = item.Order_Quantity;
+      });
+      
+      const chartData = Object.keys(groupedData).map(date => ({
+        date,
+        ...groupedData[date]
+      }));
+      
+      setSalesTrendData(chartData);
+    } catch (error) {
+      console.error('Error fetching sales trend data:', error);
+      setSalesTrendData([]);
+    }
+  };
+
   const fetchSalesData = async () => {
     setLoading(true);
 
