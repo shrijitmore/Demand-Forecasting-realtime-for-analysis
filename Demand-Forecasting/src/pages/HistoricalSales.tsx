@@ -181,9 +181,10 @@ const HistoricalSales = () => {
     setDataLoaded(true);
   }, [dataLoaded]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
+    setDataLoaded(false); // Allow refetch
     await fetchSalesData();
-  };
+  }, [fetchSalesData]);
 
   const handleExport = async () => {
     // Create CSV content for all sales data
