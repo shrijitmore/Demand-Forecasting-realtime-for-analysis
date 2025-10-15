@@ -351,7 +351,7 @@ const HistoricalSales = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Sales Trend - Full Width */}
+        {/* Sales Trend - Full Width with Horizontal Scroll */}
         <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -374,7 +374,7 @@ const HistoricalSales = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-80 w-full overflow-x-auto">
               {salesTrendLoading ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-muted-foreground flex items-center gap-2">
@@ -383,61 +383,64 @@ const HistoricalSales = () => {
                   </div>
                 </div>
               ) : salesTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={salesTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 11, fill: '#666' }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 11, fill: '#666' }}
-                      label={{ value: 'Order Quantity', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#666' } }}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                      }}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="line"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="Blue Pump" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: '#3b82f6' }}
-                      activeDot={{ r: 6 }}
-                      name="Blue Pump"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="Green Pump" 
-                      stroke="#22c55e" 
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: '#22c55e' }}
-                      activeDot={{ r: 6 }}
-                      name="Green Pump"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="Orange Pump" 
-                      stroke="#f97316" 
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: '#f97316' }}
-                      activeDot={{ r: 6 }}
-                      name="Orange Pump"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ minWidth: `${Math.max(1200, salesTrendData.length * 30)}px`, height: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={salesTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 11, fill: '#666' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval={salesTrendData.length > 50 ? Math.floor(salesTrendData.length / 30) : 0}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11, fill: '#666' }}
+                        label={{ value: 'Order Quantity', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#666' } }}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="line"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="Blue Pump" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2.5}
+                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#3b82f6' } : false}
+                        activeDot={{ r: 6 }}
+                        name="Blue Pump"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="Green Pump" 
+                        stroke="#22c55e" 
+                        strokeWidth={2.5}
+                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#22c55e' } : false}
+                        activeDot={{ r: 6 }}
+                        name="Green Pump"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="Orange Pump" 
+                        stroke="#f97316" 
+                        strokeWidth={2.5}
+                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#f97316' } : false}
+                        activeDot={{ r: 6 }}
+                        name="Orange Pump"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-muted-foreground">No data available for {salesTrendPeriod} view</div>
