@@ -280,8 +280,29 @@ const HistoricalSales = () => {
   }, [fetchSalesData]);
   
   useEffect(() => {
-    fetchSalesTrendData(salesTrendPeriod);
-  }, [salesTrendPeriod, fetchSalesTrendData]);
+    // Check if data is already cached for this period
+    if (salesTrendCache[salesTrendPeriod]) {
+      setSalesTrendData(salesTrendCache[salesTrendPeriod]);
+      return;
+    }
+    
+    // Fetch new data and cache it
+    const fetchAndCache = async () => {
+      await fetchSalesTrendData(salesTrendPeriod);
+      // Cache will be updated after data is fetched
+    };
+    fetchAndCache();
+  }, [salesTrendPeriod, salesTrendCache, fetchSalesTrendData]);
+  
+  // Update cache when sales trend data changes
+  useEffect(() => {
+    if (salesTrendData.length > 0) {
+      setSalesTrendCache(prev => ({
+        ...prev,
+        [salesTrendPeriod]: salesTrendData
+      }));
+    }
+  }, [salesTrendData, salesTrendPeriod]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
