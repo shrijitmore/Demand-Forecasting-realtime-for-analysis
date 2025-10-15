@@ -849,7 +849,14 @@ const HistoricalSales = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loadingStates.insights ? (
+            <div className="h-32 flex items-center justify-center">
+              <div className="text-muted-foreground flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Loading insights...
+              </div>
+            </div>
+          ) : loading ? (
             <div className="h-32 flex items-center justify-center">
               <div className="text-muted-foreground">Loading...</div>
             </div>
