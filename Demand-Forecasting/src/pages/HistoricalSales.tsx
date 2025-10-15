@@ -696,10 +696,7 @@ const HistoricalSales = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-muted-foreground flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    Loading regional data...
-                  </div>
+                  <div className="text-muted-foreground">No regional data available</div>
                 </div>
               )}
             </div>
@@ -713,7 +710,14 @@ const HistoricalSales = () => {
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              {topProducts && topProducts.products && topProducts.sales ? (
+              {loadingStates.products ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </div>
+                </div>
+              ) : topProducts && topProducts.products && topProducts.sales ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={topProducts.products.map((product: string, index: number) => ({
