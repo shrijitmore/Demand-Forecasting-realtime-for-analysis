@@ -460,7 +460,14 @@ const HistoricalSales = () => {
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              {citySales && citySales.cities && citySales.sales ? (
+              {loadingStates.city ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Loading city data...
+                  </div>
+                </div>
+              ) : citySales && citySales.cities && citySales.sales ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={citySales.cities.map((city: string, index: number) => ({
