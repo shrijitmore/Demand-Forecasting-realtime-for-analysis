@@ -575,7 +575,7 @@ const HistoricalSales = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-muted-foreground">Loading...</div>
+                  <div className="text-muted-foreground">No category data available</div>
                 </div>
               )}
             </div>
@@ -589,7 +589,14 @@ const HistoricalSales = () => {
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              {shippingMode && shippingMode.modes && shippingMode.counts ? (
+              {loadingStates.shipping ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </div>
+                </div>
+              ) : shippingMode && shippingMode.modes && shippingMode.counts ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={shippingMode.modes.map((mode: string, index: number) => ({
                     mode,
