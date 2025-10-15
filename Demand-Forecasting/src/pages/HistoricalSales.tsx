@@ -29,6 +29,18 @@ const HistoricalSales = () => {
   const [salesTrendPeriod, setSalesTrendPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
   const [salesTrendData, setSalesTrendData] = useState<any[]>([]);
   const [salesTrendLoading, setSalesTrendLoading] = useState(false);
+  
+  // Individual loading states for each chart
+  const [loadingStates, setLoadingStates] = useState({
+    kpis: false,
+    city: false,
+    category: false,
+    monthly: false,
+    shipping: false,
+    region: false,
+    products: false,
+    insights: false
+  });
 
   // Fetch sales trend data from external API
   const fetchSalesTrendData = useCallback(async (period: string) => {
