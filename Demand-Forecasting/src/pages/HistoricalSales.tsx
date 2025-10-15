@@ -747,7 +747,7 @@ const HistoricalSales = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-muted-foreground">Loading...</div>
+                  <div className="text-muted-foreground">No product data available</div>
                 </div>
               )}
             </div>
