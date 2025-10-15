@@ -74,6 +74,9 @@ const HistoricalSales = () => {
       setSalesTrendLoading(false);
     }
   }, []);
+  
+  // Cache for sales trend data by period
+  const [salesTrendCache, setSalesTrendCache] = useState<{[key: string]: any[]}>({});
 
   const fetchSalesData = useCallback(async () => {
     if (dataLoaded) return; // Prevent refetching if data is already loaded
