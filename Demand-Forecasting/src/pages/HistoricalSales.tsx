@@ -81,69 +81,132 @@ const HistoricalSales = () => {
     setLoading(true);
 
     try {
-      const [kpisR, cityR, categoryR, monthlyR, shippingR, regionR, productsR] = await Promise.allSettled([
+      // Fetch all data with timeout and independent error handling
+      const timeout = 3000; // 3 second timeout for each API call
+      
+      // KPIs
+      setLoadingStates(prev => ({ ...prev, kpis: true }));
+      const kpisPromise = Promise.race([
         apiCall(() => api.getSalesKPIs()),
-        apiCall(() => api.getSalesMetrics('city-sales')),
-        apiCall(() => api.getSalesMetrics('category-distribution')),
-        apiCall(() => api.getSalesMetrics('monthly-sales')),
-        apiCall(() => api.getSalesMetrics('shipping-mode')),
-        apiCall(() => api.getSalesMetrics('region-sales')),
-        apiCall(() => api.getSalesMetrics('top-products'))
-      ]);
-
-      const kpis = kpisR.status === 'fulfilled' ? kpisR.value : null;
-      const city = cityR.status === 'fulfilled' ? cityR.value : null;
-      const category = categoryR.status === 'fulfilled' ? categoryR.value : null;
-      const monthly = monthlyR.status === 'fulfilled' ? monthlyR.value : null;
-      const shipping = shippingR.status === 'fulfilled' ? shippingR.value : null;
-      const region = regionR.status === 'fulfilled' ? regionR.value : null;
-      const products = productsR.status === 'fulfilled' ? productsR.value : null;
-
-      // Debug: Log the data being returned (with statuses)
-      console.log('Sales data received:', {
-        kpisStatus: kpisR.status,
-        cityStatus: cityR.status,
-        categoryStatus: categoryR.status,
-        monthlyStatus: monthlyR.status,
-        shippingStatus: shippingR.status,
-        regionStatus: regionR.status,
-        productsStatus: productsR.status,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setSalesKPIs(data as SalesKPIs);
+        setLoadingStates(prev => ({ ...prev, kpis: false }));
+      }).catch(() => {
+        setSalesKPIs(null);
+        setLoadingStates(prev => ({ ...prev, kpis: false }));
       });
 
-      // Set data with null checks
-      setSalesKPIs(kpis);
-      setCitySales(city && city.cities && city.sales ? city : null);
-      setCategoryDistribution(category && category.categories && category.sales ? category : null);
-      setMonthlySales(monthly && monthly.months && monthly.sales ? monthly : null);
-      setShippingMode(shipping && shipping.modes && shipping.counts ? shipping : null);
-      setRegionSales(region && region.regions && region.sales ? region : null);
-      setTopProducts(products && products.products && products.sales ? products : null);
+      // City Sales
+      setLoadingStates(prev => ({ ...prev, city: true }));
+      const cityPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('city-sales')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setCitySales(data && data.cities && data.sales ? data : null);
+        setLoadingStates(prev => ({ ...prev, city: false }));
+      }).catch(() => {
+        setCitySales(null);
+        setLoadingStates(prev => ({ ...prev, city: false }));
+      });
 
+      // Category Distribution
+      setLoadingStates(prev => ({ ...prev, category: true }));
+      const categoryPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('category-distribution')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setCategoryDistribution(data && data.categories && data.sales ? data : null);
+        setLoadingStates(prev => ({ ...prev, category: false }));
+      }).catch(() => {
+        setCategoryDistribution(null);
+        setLoadingStates(prev => ({ ...prev, category: false }));
+      });
+
+      // Monthly Sales
+      setLoadingStates(prev => ({ ...prev, monthly: true }));
+      const monthlyPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('monthly-sales')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setMonthlySales(data && data.months && data.sales ? data : null);
+        setLoadingStates(prev => ({ ...prev, monthly: false }));
+      }).catch(() => {
+        setMonthlySales(null);
+        setLoadingStates(prev => ({ ...prev, monthly: false }));
+      });
+
+      // Shipping Mode
+      setLoadingStates(prev => ({ ...prev, shipping: true }));
+      const shippingPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('shipping-mode')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setShippingMode(data && data.modes && data.counts ? data : null);
+        setLoadingStates(prev => ({ ...prev, shipping: false }));
+      }).catch(() => {
+        setShippingMode(null);
+        setLoadingStates(prev => ({ ...prev, shipping: false }));
+      });
+
+      // Region Sales
+      setLoadingStates(prev => ({ ...prev, region: true }));
+      const regionPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('region-sales')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setRegionSales(data && data.regions && data.sales ? data : null);
+        setLoadingStates(prev => ({ ...prev, region: false }));
+      }).catch(() => {
+        setRegionSales(null);
+        setLoadingStates(prev => ({ ...prev, region: false }));
+      });
+
+      // Top Products
+      setLoadingStates(prev => ({ ...prev, products: true }));
+      const productsPromise = Promise.race([
+        apiCall(() => api.getSalesMetrics('top-products')),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+      ]).then(data => {
+        setTopProducts(data && data.products && data.sales ? data : null);
+        setLoadingStates(prev => ({ ...prev, products: false }));
+      }).catch(() => {
+        setTopProducts(null);
+        setLoadingStates(prev => ({ ...prev, products: false }));
+      });
+
+      // Wait for all promises to settle
+      await Promise.allSettled([
+        kpisPromise,
+        cityPromise,
+        categoryPromise,
+        monthlyPromise,
+        shippingPromise,
+        regionPromise,
+        productsPromise
+      ]);
+
+      // Fetch insights separately with timeout
+      setLoadingStates(prev => ({ ...prev, insights: true }));
       try {
-        console.log('Fetching historical insights data...');
-        
-        // Test each API call individually to see which one fails
-        const yearlyResponse = await apiCall(() => api.getHistoricalInsights('yearly'));
-        const monthlyResponse = await apiCall(() => api.getHistoricalInsights('monthly'));
-        const quarterlyResponse = await apiCall(() => api.getHistoricalInsights('quarterly'));
-        
-        console.log('Insights API responses:', {
-          yearly: yearlyResponse ? 'Success' : 'Failed',
-          monthly: monthlyResponse ? 'Success' : 'Failed',
-          quarterly: quarterlyResponse ? 'Success' : 'Failed'
-        });
+        const yearlyResponse = await Promise.race([
+          apiCall(() => api.getHistoricalInsights('yearly')),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
+        const monthlyResponse = await Promise.race([
+          apiCall(() => api.getHistoricalInsights('monthly')),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
+        const quarterlyResponse = await Promise.race([
+          apiCall(() => api.getHistoricalInsights('quarterly')),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
         
         const yearlyData = yearlyResponse || [];
         const monthlyData = monthlyResponse || [];
         const quarterlyData = quarterlyResponse || [];
-        
-        console.log('Raw insights data:', {
-          yearly: yearlyData,
-          monthly: monthlyData,
-          quarterly: quarterlyData
-        });
 
-        // Normalize yearly data keys
+        // Normalize data keys
         const normalizedYearlyData = yearlyData.map(item => {
           const yearKey = Object.keys(item).find(key => key.toLowerCase().includes('year')) || 'Year';
           return {
@@ -152,7 +215,6 @@ const HistoricalSales = () => {
           };
         });
 
-        // Normalize monthly data keys by removing BOM character if present
         const normalizedMonthlyData = monthlyData.map(item => {
           const monthKey = Object.keys(item).find(key => key.toLowerCase().includes('month')) || 'Month';
           return {
@@ -161,19 +223,12 @@ const HistoricalSales = () => {
           };
         });
 
-        // Normalize quarterly data keys by removing BOM character if present
         const normalizedQuarterlyData = quarterlyData.map(item => {
           const quarterKey = Object.keys(item).find(key => key.toLowerCase().includes('quarter')) || 'Quarter';
           return {
             Quarter: item[quarterKey],
             Insight: item.Insight
           };
-        });
-        
-        console.log('Normalized insights data:', {
-          yearly: normalizedYearlyData,
-          monthly: normalizedMonthlyData,
-          quarterly: normalizedQuarterlyData
         });
 
         setYearlyInsights(normalizedYearlyData);
@@ -185,6 +240,7 @@ const HistoricalSales = () => {
         setMonthlyInsights([]);
         setQuarterlyInsights([]);
       }
+      setLoadingStates(prev => ({ ...prev, insights: false }));
     } catch (error) {
       console.error('Error fetching sales data:', error);
     }
