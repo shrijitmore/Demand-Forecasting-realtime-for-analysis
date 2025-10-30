@@ -280,19 +280,9 @@ const HistoricalSales = () => {
   }, [fetchSalesData]);
   
   useEffect(() => {
-    // Check if data is already cached for this period
-    if (salesTrendCache[salesTrendPeriod]) {
-      setSalesTrendData(salesTrendCache[salesTrendPeriod]);
-      return;
-    }
-    
-    // Fetch new data and cache it
-    const fetchAndCache = async () => {
-      await fetchSalesTrendData(salesTrendPeriod);
-      // Cache will be updated after data is fetched
-    };
-    fetchAndCache();
-  }, [salesTrendPeriod, salesTrendCache, fetchSalesTrendData]);
+    // Fetch sales trend data when period changes
+    fetchSalesTrendData(salesTrendPeriod);
+  }, [salesTrendPeriod, fetchSalesTrendData]);
   
   // Update cache when sales trend data changes
   useEffect(() => {
