@@ -249,27 +249,26 @@ const HistoricalSales = () => {
       // Fetch Insights
       setLoadingStates(prev => ({ ...prev, insights: true }));
       try {
-        const [yearlyData, monthlyData, quarterlyData] = await Promise.all([
-          Promise.race([
-            apiCall(() => api.getHistoricalInsights('yearly')),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-          ]).catch(() => []),
-          Promise.race([
-            apiCall(() => api.getHistoricalInsights('monthly')),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-          ]).catch(() => []),
-          Promise.race([
-            apiCall(() => api.getHistoricalInsights('quarterly')),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-          ]).catch(() => [])
-        ]);
+        console.log('📡 Fetching Insights...');
+        
+        const yearlyResponse = await fetch('http://192.168.10.159:5000/api/insights/yearly').catch(() => null);
+        const monthlyResponse = await fetch('http://192.168.10.159:5000/api/insights/monthly').catch(() => null);
+        const quarterlyResponse = await fetch('http://192.168.10.159:5000/api/insights/quarterly').catch(() => null);
+        
+        const yearlyData = yearlyResponse && yearlyResponse.ok ? await yearlyResponse.json() : [];
+        const monthlyData = monthlyResponse && monthlyResponse.ok ? await monthlyResponse.json() : [];
+        const quarterlyData = quarterlyResponse && quarterlyResponse.ok ? await quarterlyResponse.json() : [];
 
+        console.log('✅ Insights loaded - Yearly:', yearlyData.length, 'Monthly:', monthlyData.length, 'Quarterly:', quarterlyData.length);
+        
         setYearlyInsights(yearlyData || []);
         setMonthlyInsights(monthlyData || []);
         setQuarterlyInsights(quarterlyData || []);
-        console.log('✅ Insights loaded');
       } catch (error) {
         console.error('❌ Insights failed:', error);
+        setYearlyInsights([]);
+        setMonthlyInsights([]);
+        setQuarterlyInsights([]);
       }
       setLoadingStates(prev => ({ ...prev, insights: false }));
 
