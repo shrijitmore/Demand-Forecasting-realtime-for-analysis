@@ -12,6 +12,12 @@ interface RiskData {
   Affected_Domains: string;
   Impact_Details: string;
   Recommended_Actions: string;
+  Relevant?: boolean;
+  Source?: string;
+  Link?: string;
+  Sentiment?: string;
+  Severity?: string;
+  Additional?: Record<string, any>;
 }
 
 const ListAnalysis: React.FC = () => {
@@ -26,7 +32,7 @@ const ListAnalysis: React.FC = () => {
 
     const connectWebSocket = () => {
       try {
-        ws = new WebSocket("ws://192.168.10.165:5000/risk-data");
+        ws = new WebSocket("ws://192.168.10.159:5000/risk-data");
         
         ws.onopen = () => {
           console.log("WebSocket connected");
@@ -36,10 +42,39 @@ const ListAnalysis: React.FC = () => {
 
         ws.onmessage = (event) => {
           try {
-            const data: RiskData = JSON.parse(event.data);
+            const raw = JSON.parse(event.data);
+            console.log("Risk data received:", raw);
+
+            // Normalize payload to component interface
+            const mapped: RiskData = {
+              Date: raw.Date,
+              Headline: raw.Short_Title || raw.Headline || raw.Title || "",
+              PESTEL_Category: raw.PESTEL || raw.PESTEL_Category || "",
+              Summary: raw.Summary || raw.Title || "",
+              Affected_Domains: raw.Affected_Domains || raw.Domain || "",
+              Impact_Details: raw.Impact_Details || raw["Impact Details"] || raw["Impact Analysis"] || raw.Impact || "",
+              Recommended_Actions: raw.Recommended_Actions || raw["Recommended Actions"] || raw.Recommendations || raw.Actions || "",
+              Relevant: typeof raw.Relevant === 'boolean' ? raw.Relevant : undefined,
+              Source: raw.Source || raw.Source_Name || undefined,
+              Link: raw.Link || raw.Url || raw.URL || undefined,
+              Sentiment: raw.Sentiment || undefined,
+              Severity: raw.Severity || undefined,
+              Additional: undefined
+            };
+
+            // Capture remaining unknown fields
+            const knownKeys = new Set([
+              'Date','Short_Title','Headline','Title','PESTEL','PESTEL_Category','Summary','Affected_Domains','Domain','Impact_Details','Impact','Recommended_Actions','Actions','Relevant','Source','Source_Name','Link','Url','URL','Sentiment','Severity'
+            ]);
+            const additional: Record<string, any> = {};
+            Object.keys(raw).forEach((k) => {
+              if (!knownKeys.has(k)) additional[k] = raw[k];
+            });
+            if (Object.keys(additional).length > 0) mapped.Additional = additional;
+
             setRiskData(prev => {
               // Add new data to the beginning and keep only last 50 items
-              const newData = [data, ...prev].slice(0, 50);
+              const newData = [mapped, ...prev].slice(0, 50);
               return newData;
             });
             setIsLoading(false);
@@ -183,6 +218,11 @@ const ListAnalysis: React.FC = () => {
                         <Badge variant="outline">
                           {item.Affected_Domains}
                         </Badge>
+                        {typeof item.Relevant === 'boolean' && (
+                          <Badge variant="outline" className={`${item.Relevant ? 'border-green-300 text-green-700' : 'border-gray-300 text-gray-600'}`}>
+                            {item.Relevant ? 'Relevant' : 'Not Relevant'}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -196,14 +236,49 @@ const ListAnalysis: React.FC = () => {
                   {/* Impact Details */}
                   <div>
                     <h4 className="font-medium mb-2">Impact Details</h4>
-                    <p className="text-muted-foreground">{item.Impact_Details}</p>
+                    <p className="text-muted-foreground">
+                      {item.Impact_Details && String(item.Impact_Details).trim().length > 0 ? item.Impact_Details : 'No impact details available'}
+                    </p>
                   </div>
 
                   {/* Recommended Actions */}
                   <div>
                     <h4 className="font-medium mb-2">Recommended Actions</h4>
-                    <p className="text-muted-foreground">{item.Recommended_Actions}</p>
+                    <p className="text-muted-foreground">
+                      {item.Recommended_Actions && String(item.Recommended_Actions).trim().length > 0 ? item.Recommended_Actions : 'No recommended actions provided'}
+                    </p>
                   </div>
+
+                  {(item.Source || item.Link || item.Sentiment || item.Severity) && (
+                    <div>
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        {item.Source && <Badge variant="secondary">Source: {item.Source}</Badge>}
+                        {item.Sentiment && <Badge variant="secondary">Sentiment: {item.Sentiment}</Badge>}
+                        {item.Severity && <Badge variant="secondary">Severity: {item.Severity}</Badge>}
+                        {item.Link && (
+                          <a href={item.Link} target="_blank" rel="noreferrer" className="underline text-blue-600">
+                            Open Link
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {item.Additional && Object.keys(item.Additional).length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">More details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {Object.entries(item.Additional).map(([key, value]) => (
+                          <div key={key} className="flex items-start gap-2">
+                            <span className="font-medium min-w-28">{key}:</span>
+                            <span className="break-words">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

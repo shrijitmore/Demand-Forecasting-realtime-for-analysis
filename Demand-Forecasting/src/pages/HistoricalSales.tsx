@@ -46,7 +46,7 @@ const HistoricalSales = () => {
   const fetchSalesTrendData = useCallback(async (period: string) => {
     setSalesTrendLoading(true);
     try {
-      const response = await fetch(`http://192.168.10.157:5000/api/${period}`, {
+      const response = await fetch(`http://192.168.10.159:5000/api/${period}`, {
         signal: AbortSignal.timeout(5000) // 5 second timeout
       });
       const data = await response.json();

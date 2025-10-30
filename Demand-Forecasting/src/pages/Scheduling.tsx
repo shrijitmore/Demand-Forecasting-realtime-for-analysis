@@ -38,7 +38,7 @@ const Scheduling = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
 
   // WebSocket connection for real-time scheduling data
-  const wsUrl = `ws://192.168.10.165:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=4`;
+  const wsUrl = `ws://192.168.10.159:5000/ws/scheduling/date_range?start=2018-01-01&end=2018-01-31&interval=4`;
   
   const { readyState, lastMessage } = useWebSocket({
     url: wsUrl,
