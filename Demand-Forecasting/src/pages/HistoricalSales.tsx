@@ -332,6 +332,22 @@ const HistoricalSales = () => {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
+            onClick={() => {
+              console.log('🧪 Manual API Test');
+              console.log('KPIs:', salesKPIs);
+              console.log('City Sales:', citySales);
+              console.log('Category:', categoryDistribution);
+              console.log('Shipping:', shippingMode);
+              console.log('Region:', regionSales);
+              console.log('Products:', topProducts);
+            }}
+            className="shadow-sm text-xs"
+          >
+            Debug
+          </Button>
+          <Button
+            variant="outline"
             size="icon"
             onClick={handleRefresh}
             disabled={loading}
