@@ -294,16 +294,6 @@ const HistoricalSales = () => {
     // Fetch sales trend data when period changes
     fetchSalesTrendData(salesTrendPeriod);
   }, [salesTrendPeriod, fetchSalesTrendData]);
-  
-  // Update cache when sales trend data changes
-  useEffect(() => {
-    if (salesTrendData.length > 0) {
-      setSalesTrendCache(prev => ({
-        ...prev,
-        [salesTrendPeriod]: salesTrendData
-      }));
-    }
-  }, [salesTrendData, salesTrendPeriod]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
