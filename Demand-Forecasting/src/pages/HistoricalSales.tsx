@@ -269,10 +269,6 @@ const HistoricalSales = () => {
       }
       setLoadingStates(prev => ({ ...prev, insights: false }));
 
-    } catch (error) {
-      console.error('❌ Error in fetchSalesData:', error);
-    }
-
     setLoading(false);
     setDataLoaded(true);
     console.log('✅ All data loading complete');
