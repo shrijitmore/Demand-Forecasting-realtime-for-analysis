@@ -129,12 +129,17 @@ const HistoricalSales = () => {
       // Fetch City Sales
       setLoadingStates(prev => ({ ...prev, city: true }));
       try {
-        const cityData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('city-sales')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setCitySales(cityData && cityData.cities && cityData.sales ? cityData : null);
+        console.log('📡 Fetching City Sales...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/city-sales');
+        console.log('📡 City Sales response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const cityData = await response.json();
         console.log('✅ City sales loaded:', cityData);
+        setCitySales(cityData && cityData.cities && cityData.sales ? cityData : null);
       } catch (error) {
         console.error('❌ City sales failed:', error);
         setCitySales(null);
@@ -144,12 +149,17 @@ const HistoricalSales = () => {
       // Fetch Category Distribution
       setLoadingStates(prev => ({ ...prev, category: true }));
       try {
-        const categoryData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('category-distribution')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setCategoryDistribution(categoryData && categoryData.categories && categoryData.sales ? categoryData : null);
+        console.log('📡 Fetching Category Distribution...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/category-distribution');
+        console.log('📡 Category response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const categoryData = await response.json();
         console.log('✅ Category distribution loaded:', categoryData);
+        setCategoryDistribution(categoryData && categoryData.categories && categoryData.sales ? categoryData : null);
       } catch (error) {
         console.error('❌ Category distribution failed:', error);
         setCategoryDistribution(null);
@@ -159,12 +169,17 @@ const HistoricalSales = () => {
       // Fetch Monthly Sales
       setLoadingStates(prev => ({ ...prev, monthly: true }));
       try {
-        const monthlyData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('monthly-sales')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setMonthlySales(monthlyData && monthlyData.months && monthlyData.sales ? monthlyData : null);
+        console.log('📡 Fetching Monthly Sales...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/monthly-sales');
+        console.log('📡 Monthly Sales response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const monthlyData = await response.json();
         console.log('✅ Monthly sales loaded:', monthlyData);
+        setMonthlySales(monthlyData && monthlyData.months && monthlyData.sales ? monthlyData : null);
       } catch (error) {
         console.error('❌ Monthly sales failed:', error);
         setMonthlySales(null);
@@ -174,12 +189,17 @@ const HistoricalSales = () => {
       // Fetch Shipping Mode
       setLoadingStates(prev => ({ ...prev, shipping: true }));
       try {
-        const shippingData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('shipping-mode')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setShippingMode(shippingData && shippingData.modes && shippingData.counts ? shippingData : null);
+        console.log('📡 Fetching Shipping Mode...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/shipping-mode');
+        console.log('📡 Shipping Mode response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const shippingData = await response.json();
         console.log('✅ Shipping mode loaded:', shippingData);
+        setShippingMode(shippingData && shippingData.modes && shippingData.counts ? shippingData : null);
       } catch (error) {
         console.error('❌ Shipping mode failed:', error);
         setShippingMode(null);
@@ -189,12 +209,17 @@ const HistoricalSales = () => {
       // Fetch Region Sales
       setLoadingStates(prev => ({ ...prev, region: true }));
       try {
-        const regionData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('region-sales')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setRegionSales(regionData && regionData.regions && regionData.sales ? regionData : null);
+        console.log('📡 Fetching Region Sales...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/region-sales');
+        console.log('📡 Region Sales response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const regionData = await response.json();
         console.log('✅ Region sales loaded:', regionData);
+        setRegionSales(regionData && regionData.regions && regionData.sales ? regionData : null);
       } catch (error) {
         console.error('❌ Region sales failed:', error);
         setRegionSales(null);
@@ -204,12 +229,17 @@ const HistoricalSales = () => {
       // Fetch Top Products
       setLoadingStates(prev => ({ ...prev, products: true }));
       try {
-        const productsData = await Promise.race([
-          apiCall(() => api.getSalesMetrics('top-products')),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-        ]);
-        setTopProducts(productsData && productsData.products && productsData.sales ? productsData : null);
+        console.log('📡 Fetching Top Products...');
+        const response = await fetch('http://192.168.10.159:5000/api/sales/top-products');
+        console.log('📡 Top Products response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const productsData = await response.json();
         console.log('✅ Top products loaded:', productsData);
+        setTopProducts(productsData && productsData.products && productsData.sales ? productsData : null);
       } catch (error) {
         console.error('❌ Top products failed:', error);
         setTopProducts(null);
