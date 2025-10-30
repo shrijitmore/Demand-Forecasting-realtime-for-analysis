@@ -426,33 +426,24 @@ const HistoricalSales = () => {
                         wrapperStyle={{ paddingTop: '20px' }}
                         iconType="line"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="Blue Pump" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2.5}
-                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#3b82f6' } : false}
-                        activeDot={{ r: 6 }}
-                        name="Blue Pump"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="Green Pump" 
-                        stroke="#22c55e" 
-                        strokeWidth={2.5}
-                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#22c55e' } : false}
-                        activeDot={{ r: 6 }}
-                        name="Green Pump"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="Orange Pump" 
-                        stroke="#f97316" 
-                        strokeWidth={2.5}
-                        dot={salesTrendData.length <= 50 ? { r: 4, fill: '#f97316' } : false}
-                        activeDot={{ r: 6 }}
-                        name="Orange Pump"
-                      />
+                      {/* Dynamically render lines for all products in data */}
+                      {salesTrendData.length > 0 && Object.keys(salesTrendData[0])
+                        .filter(key => key !== 'date')
+                        .map((productName, index) => {
+                          const colors = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899'];
+                          return (
+                            <Line 
+                              key={productName}
+                              type="monotone" 
+                              dataKey={productName}
+                              stroke={colors[index % colors.length]}
+                              strokeWidth={2.5}
+                              dot={salesTrendData.length <= 50 ? { r: 4, fill: colors[index % colors.length] } : false}
+                              activeDot={{ r: 6 }}
+                              name={productName}
+                            />
+                          );
+                        })}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
