@@ -103,28 +103,25 @@ const HistoricalSales = () => {
     setLoading(true);
     console.log('🔄 Starting to fetch all sales data...');
 
+    // Fetch KPIs
+    setLoadingStates(prev => ({ ...prev, kpis: true }));
     try {
-      const timeout = 10000; // 10 second timeout
+      console.log('📡 Fetching KPIs from: http://192.168.10.159:5000/api/sales/kpis');
+      const response = await fetch('http://192.168.10.159:5000/api/sales/kpis');
+      console.log('📡 KPIs response status:', response.status, response.statusText);
       
-      // Fetch KPIs
-      setLoadingStates(prev => ({ ...prev, kpis: true }));
-      try {
-        console.log('📡 Fetching KPIs from: http://192.168.10.159:5000/api/sales/kpis');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/kpis');
-        console.log('📡 KPIs response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const kpisData = await response.json();
-        console.log('✅ KPIs loaded:', kpisData);
-        setSalesKPIs(kpisData);
-      } catch (error) {
-        console.error('❌ KPIs failed:', error);
-        setSalesKPIs(null);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      setLoadingStates(prev => ({ ...prev, kpis: false }));
+      
+      const kpisData = await response.json();
+      console.log('✅ KPIs data received:', kpisData);
+      setSalesKPIs(kpisData);
+    } catch (error) {
+      console.error('❌ KPIs failed:', error);
+      setSalesKPIs(null);
+    }
+    setLoadingStates(prev => ({ ...prev, kpis: false }));
 
       // Fetch City Sales
       setLoadingStates(prev => ({ ...prev, city: true }));
