@@ -45,27 +45,41 @@ const HistoricalSales = () => {
   // Fetch sales trend data from external API
   const fetchSalesTrendData = useCallback(async (period: string) => {
     setSalesTrendLoading(true);
+    console.log(`Fetching sales trend data for period: ${period}`);
     try {
-      const response = await fetch(`http://192.168.10.159:5000/api/${period}`, {
-        signal: AbortSignal.timeout(5000) // 5 second timeout
-      });
+      const response = await fetch(`http://192.168.10.159:5000/api/${period}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`Received ${data.length} records for ${period}`, data.slice(0, 2));
       
       // Transform data for chart
       const groupedData: { [key: string]: { [product: string]: number } } = {};
       
       data.forEach((item: any) => {
-        if (!groupedData[item.Date]) {
-          groupedData[item.Date] = {};
+        const date = item.Date || item.date;
+        const product = item.Product || item.product || item.PRODUCT_NAME;
+        const quantity = item.Order_Quantity || item.order_quantity || item.Forecasted_Demand || 0;
+        
+        if (date && product) {
+          if (!groupedData[date]) {
+            groupedData[date] = {};
+          }
+          groupedData[date][product] = quantity;
         }
-        groupedData[item.Date][item.Product] = item.Order_Quantity;
       });
       
-      const chartData = Object.keys(groupedData).map(date => ({
-        date,
-        ...groupedData[date]
-      }));
+      const chartData = Object.keys(groupedData)
+        .sort()
+        .map(date => ({
+          date,
+          ...groupedData[date]
+        }));
       
+      console.log(`Transformed to ${chartData.length} chart data points`, chartData.slice(0, 2));
       setSalesTrendData(chartData);
     } catch (error) {
       console.error('Error fetching sales trend data:', error);
@@ -74,9 +88,6 @@ const HistoricalSales = () => {
       setSalesTrendLoading(false);
     }
   }, []);
-  
-  // Cache for sales trend data by period
-  const [salesTrendCache, setSalesTrendCache] = useState<{[key: string]: any[]}>({});
 
   const fetchSalesData = useCallback(async () => {
     if (dataLoaded) return; // Prevent refetching if data is already loaded
