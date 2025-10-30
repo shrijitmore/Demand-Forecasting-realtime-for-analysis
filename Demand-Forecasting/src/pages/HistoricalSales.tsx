@@ -101,177 +101,158 @@ const HistoricalSales = () => {
     if (dataLoaded) return;
     
     setLoading(true);
-    console.log('🔄 Starting to fetch all sales data...');
+    console.log('🔄 Starting to fetch all sales data in parallel...');
 
-    // Fetch KPIs
-    setLoadingStates(prev => ({ ...prev, kpis: true }));
-    try {
-      console.log('📡 Fetching KPIs from: http://192.168.10.159:5000/api/sales/kpis');
-      const response = await fetch('http://192.168.10.159:5000/api/sales/kpis');
-      console.log('📡 KPIs response status:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const kpisData = await response.json();
-      console.log('✅ KPIs data received:', kpisData);
-      setSalesKPIs(kpisData);
-    } catch (error) {
-      console.error('❌ KPIs failed:', error);
-      setSalesKPIs(null);
-    }
-    setLoadingStates(prev => ({ ...prev, kpis: false }));
+    // Set all loading states to true
+    setLoadingStates({
+      kpis: true,
+      city: true,
+      category: true,
+      monthly: true,
+      shipping: true,
+      region: true,
+      products: true,
+      insights: true
+    });
 
-      // Fetch City Sales
-      setLoadingStates(prev => ({ ...prev, city: true }));
-      try {
-        console.log('📡 Fetching City Sales...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/city-sales');
-        console.log('📡 City Sales response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const cityData = await response.json();
-        console.log('✅ City sales loaded:', cityData);
-        setCitySales(cityData && cityData.cities && cityData.sales ? cityData : null);
-      } catch (error) {
-        console.error('❌ City sales failed:', error);
-        setCitySales(null);
-      }
-      setLoadingStates(prev => ({ ...prev, city: false }));
+    // Fetch ALL data in parallel using Promise.all
+    const results = await Promise.allSettled([
+      // KPIs
+      fetch('http://192.168.10.159:5000/api/sales/kpis')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ KPIs loaded:', data);
+          setSalesKPIs(data);
+          setLoadingStates(prev => ({ ...prev, kpis: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ KPIs failed:', err);
+          setSalesKPIs(null);
+          setLoadingStates(prev => ({ ...prev, kpis: false }));
+        }),
 
-      // Fetch Category Distribution
-      setLoadingStates(prev => ({ ...prev, category: true }));
-      try {
-        console.log('📡 Fetching Category Distribution...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/category-distribution');
-        console.log('📡 Category response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const categoryData = await response.json();
-        console.log('✅ Category distribution loaded:', categoryData);
-        setCategoryDistribution(categoryData && categoryData.categories && categoryData.sales ? categoryData : null);
-      } catch (error) {
-        console.error('❌ Category distribution failed:', error);
-        setCategoryDistribution(null);
-      }
-      setLoadingStates(prev => ({ ...prev, category: false }));
+      // City Sales
+      fetch('http://192.168.10.159:5000/api/sales/city-sales')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ City sales loaded:', data);
+          setCitySales(data && data.cities && data.sales ? data : null);
+          setLoadingStates(prev => ({ ...prev, city: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ City sales failed:', err);
+          setCitySales(null);
+          setLoadingStates(prev => ({ ...prev, city: false }));
+        }),
 
-      // Fetch Monthly Sales
-      setLoadingStates(prev => ({ ...prev, monthly: true }));
-      try {
-        console.log('📡 Fetching Monthly Sales...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/monthly-sales');
-        console.log('📡 Monthly Sales response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const monthlyData = await response.json();
-        console.log('✅ Monthly sales loaded:', monthlyData);
-        setMonthlySales(monthlyData && monthlyData.months && monthlyData.sales ? monthlyData : null);
-      } catch (error) {
-        console.error('❌ Monthly sales failed:', error);
-        setMonthlySales(null);
-      }
-      setLoadingStates(prev => ({ ...prev, monthly: false }));
+      // Category Distribution
+      fetch('http://192.168.10.159:5000/api/sales/category-distribution')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ Category distribution loaded:', data);
+          setCategoryDistribution(data && data.categories && data.sales ? data : null);
+          setLoadingStates(prev => ({ ...prev, category: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ Category distribution failed:', err);
+          setCategoryDistribution(null);
+          setLoadingStates(prev => ({ ...prev, category: false }));
+        }),
 
-      // Fetch Shipping Mode
-      setLoadingStates(prev => ({ ...prev, shipping: true }));
-      try {
-        console.log('📡 Fetching Shipping Mode...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/shipping-mode');
-        console.log('📡 Shipping Mode response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const shippingData = await response.json();
-        console.log('✅ Shipping mode loaded:', shippingData);
-        setShippingMode(shippingData && shippingData.modes && shippingData.counts ? shippingData : null);
-      } catch (error) {
-        console.error('❌ Shipping mode failed:', error);
-        setShippingMode(null);
-      }
-      setLoadingStates(prev => ({ ...prev, shipping: false }));
+      // Monthly Sales
+      fetch('http://192.168.10.159:5000/api/sales/monthly-sales')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ Monthly sales loaded:', data);
+          setMonthlySales(data && data.months && data.sales ? data : null);
+          setLoadingStates(prev => ({ ...prev, monthly: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ Monthly sales failed:', err);
+          setMonthlySales(null);
+          setLoadingStates(prev => ({ ...prev, monthly: false }));
+        }),
 
-      // Fetch Region Sales
-      setLoadingStates(prev => ({ ...prev, region: true }));
-      try {
-        console.log('📡 Fetching Region Sales...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/region-sales');
-        console.log('📡 Region Sales response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const regionData = await response.json();
-        console.log('✅ Region sales loaded:', regionData);
-        setRegionSales(regionData && regionData.regions && regionData.sales ? regionData : null);
-      } catch (error) {
-        console.error('❌ Region sales failed:', error);
-        setRegionSales(null);
-      }
-      setLoadingStates(prev => ({ ...prev, region: false }));
+      // Shipping Mode
+      fetch('http://192.168.10.159:5000/api/sales/shipping-mode')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ Shipping mode loaded:', data);
+          setShippingMode(data && data.modes && data.counts ? data : null);
+          setLoadingStates(prev => ({ ...prev, shipping: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ Shipping mode failed:', err);
+          setShippingMode(null);
+          setLoadingStates(prev => ({ ...prev, shipping: false }));
+        }),
 
-      // Fetch Top Products
-      setLoadingStates(prev => ({ ...prev, products: true }));
-      try {
-        console.log('📡 Fetching Top Products...');
-        const response = await fetch('http://192.168.10.159:5000/api/sales/top-products');
-        console.log('📡 Top Products response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const productsData = await response.json();
-        console.log('✅ Top products loaded:', productsData);
-        setTopProducts(productsData && productsData.products && productsData.sales ? productsData : null);
-      } catch (error) {
-        console.error('❌ Top products failed:', error);
-        setTopProducts(null);
-      }
-      setLoadingStates(prev => ({ ...prev, products: false }));
+      // Region Sales
+      fetch('http://192.168.10.159:5000/api/sales/region-sales')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ Region sales loaded:', data);
+          setRegionSales(data && data.regions && data.sales ? data : null);
+          setLoadingStates(prev => ({ ...prev, region: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ Region sales failed:', err);
+          setRegionSales(null);
+          setLoadingStates(prev => ({ ...prev, region: false }));
+        }),
 
-      // Fetch Insights
-      setLoadingStates(prev => ({ ...prev, insights: true }));
-      try {
-        console.log('📡 Fetching Insights...');
-        
-        const yearlyResponse = await fetch('http://192.168.10.159:5000/api/insights/yearly').catch(() => null);
-        const monthlyResponse = await fetch('http://192.168.10.159:5000/api/insights/monthly').catch(() => null);
-        const quarterlyResponse = await fetch('http://192.168.10.159:5000/api/insights/quarterly').catch(() => null);
-        
-        const yearlyData = yearlyResponse && yearlyResponse.ok ? await yearlyResponse.json() : [];
-        const monthlyData = monthlyResponse && monthlyResponse.ok ? await monthlyResponse.json() : [];
-        const quarterlyData = quarterlyResponse && quarterlyResponse.ok ? await quarterlyResponse.json() : [];
+      // Top Products
+      fetch('http://192.168.10.159:5000/api/sales/top-products')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          console.log('✅ Top products loaded:', data);
+          setTopProducts(data && data.products && data.sales ? data : null);
+          setLoadingStates(prev => ({ ...prev, products: false }));
+          return data;
+        })
+        .catch(err => {
+          console.error('❌ Top products failed:', err);
+          setTopProducts(null);
+          setLoadingStates(prev => ({ ...prev, products: false }));
+        }),
 
-        console.log('✅ Insights loaded - Yearly:', yearlyData.length, 'Monthly:', monthlyData.length, 'Quarterly:', quarterlyData.length);
-        
-        setYearlyInsights(yearlyData || []);
-        setMonthlyInsights(monthlyData || []);
-        setQuarterlyInsights(quarterlyData || []);
-      } catch (error) {
-        console.error('❌ Insights failed:', error);
-        setYearlyInsights([]);
-        setMonthlyInsights([]);
-        setQuarterlyInsights([]);
-      }
-      setLoadingStates(prev => ({ ...prev, insights: false }));
+      // Insights - Yearly
+      fetch('http://192.168.10.159:5000/api/insights/yearly')
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => []),
+
+      // Insights - Monthly
+      fetch('http://192.168.10.159:5000/api/insights/monthly')
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => []),
+
+      // Insights - Quarterly
+      fetch('http://192.168.10.159:5000/api/insights/quarterly')
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => [])
+    ]);
+
+    // Process insights results
+    const yearlyData = results[7].status === 'fulfilled' ? results[7].value : [];
+    const monthlyData = results[8].status === 'fulfilled' ? results[8].value : [];
+    const quarterlyData = results[9].status === 'fulfilled' ? results[9].value : [];
+
+    setYearlyInsights(yearlyData || []);
+    setMonthlyInsights(monthlyData || []);
+    setQuarterlyInsights(quarterlyData || []);
+    setLoadingStates(prev => ({ ...prev, insights: false }));
+    
+    console.log('✅ Insights loaded - Yearly:', yearlyData?.length, 'Monthly:', monthlyData?.length, 'Quarterly:', quarterlyData?.length);
 
     setLoading(false);
     setDataLoaded(true);
-    console.log('✅ All data loading complete');
+    console.log('✅ All data loading complete (parallel fetch)');
   }, [dataLoaded]);
 
   const handleRefresh = useCallback(async () => {
